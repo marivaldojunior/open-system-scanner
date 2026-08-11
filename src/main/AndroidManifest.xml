@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+        A permissao vive aqui, na biblioteca, porque quem consome a camera
+        (VisionScannerView / CameraX) e este modulo, nao o app cliente. O
+        Android Gradle Plugin faz merge deste manifesto com o do app
+        hospedeiro no momento do build, entao toda vez que o app referenciar
+        este .aar, a permissao ja chega junto - o time cliente nao precisa
+        adivinhar que precisa declara-la.
+    -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!--
+        required="false" e proposital: coletores corporativos (Zebra,
+        Datalogic) frequentemente NAO tem camera traseira dedicada ou
+        autofocus, e ainda assim precisam instalar/rodar o app usando
+        apenas o leitor de hardware (UniversalScanner via Intent/DataWedge).
+        Se essas features fossem required="true" (o padrao implicito do
+        Android quando se declara uma <uses-feature> sem o atributo),
+        a Google Play Store bloquearia a instalacao do app nesses
+        aparelhos e o merge deste manifesto quebraria silenciosamente o
+        outro ecossistema (hardware) que esta biblioteca tambem suporta.
+    -->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.camera.autofocus"
+        android:required="false" />
+
+</manifest>

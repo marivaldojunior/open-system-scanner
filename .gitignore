@@ -1,0 +1,62 @@
+### Android / Gradle (modulo nativo na raiz) ###
+build/
+.gradle/
+.cxx/
+captures/
+*.apk
+*.aab
+local.properties
+
+# gradlew, gradlew.bat e gradle/wrapper/* ficam versionados de proposito
+# (nao ha regra abaixo que os exclua) - garante build reprodutivel para
+# quem clona o repo.
+
+# SDKs proprietarios (Zebra EMDK, Datalogic) - nao devem ser versionados,
+# ver libs/README.md. build.gradle.kts ja trata a ausencia deles.
+libs/*.jar
+libs/*.aar
+
+### Android Studio / IntelliJ ###
+.idea/
+*.iml
+.navigation/
+
+### .NET / MAUI (dotnet/) ###
+bin/
+obj/
+*.user
+*.userosscache
+*.suo
+.vs/
+
+# .aar copiado manualmente para a binding library - regenerar a partir do
+# build do modulo nativo, nao versionar o binario.
+dotnet/OpenSystemScanner.Android.Binding/Jars/*.aar
+
+### Flutter / Dart (flutter/) ###
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+**/doc/api/
+*.g.dart
+*.freezed.dart
+
+# .aar copiado manualmente para o plugin - mesmo raciocinio do binding MAUI.
+flutter/opensystemscanner_flutter/android/libs/*.aar
+
+# Build/gerado por `flutter create` a cada `flutter pub get` / build
+flutter/**/android/.gradle/
+flutter/**/android/local.properties
+flutter/**/ios/Flutter/Flutter.framework/
+flutter/**/ios/Flutter/Flutter.podspec
+flutter/**/ios/Pods/
+
+### Sistema operacional / editores ###
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
