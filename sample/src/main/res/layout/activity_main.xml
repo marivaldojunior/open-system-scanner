@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/lastScanText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:text="Nenhuma leitura ainda" />
+
+    <!--
+        Container vazio de proposito: a VisionScannerView e criada
+        programaticamente via DataCaptureFactory.getCameraScannerView(...)
+        e injetada aqui - instanciar via XML direto contornaria a Factory
+        e a view nasceria sem VisionEngineAnalyzer configurado.
+    -->
+    <FrameLayout
+        android:id="@+id/cameraContainer"
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        android:layout_marginTop="16dp"
+        android:background="#DDDDDD" />
+
+    <Button
+        android:id="@+id/activateCameraButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Ativar Câmera" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:gravity="center"
+        android:textColor="#888888"
+        android:text="Ou pressione o gatilho físico do coletor" />
+
+</LinearLayout>

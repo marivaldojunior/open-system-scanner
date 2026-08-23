@@ -17,3 +17,9 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "opensystemscanner"
+
+// O modulo da biblioteca fica na raiz (projeto ":"). ":sample" e um app
+// Android puro que a consome via project(":") - mesmo build Gradle, sempre
+// em sincronia com o codigo-fonte atual (sem gerar/copiar .aar manualmente,
+// como e necessario nas pontes MAUI/Flutter que sao builds separados).
+include(":sample")
