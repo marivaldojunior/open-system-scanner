@@ -1,0 +1,30 @@
+<metadata>
+
+  <!--
+    Kotlin "enum class CaptureMode" compila para um enum Java puro.
+    O binding generator PRESERVA o nome original das constantes
+    (HARDWARE_BARCODE, CAMERA_BARCODE, CAMERA_VISION) por padrao.
+    Sem esta transformacao, o C# enum sera:
+      CaptureMode.HARDWARE_BARCODE / CAMERA_BARCODE / CAMERA_VISION
+    Com ela, ficamos com o padrao PascalCase idiomatico do .NET,
+    usado no restante deste documento (ex.: CaptureMode.CameraBarcode).
+  -->
+  <attr path="/api/package[@name='com.scannervciarfid.core']/enum[@name='CaptureMode']/field[@name='HARDWARE_BARCODE']"
+        name="managedName">HardwareBarcode</attr>
+  <attr path="/api/package[@name='com.scannervciarfid.core']/enum[@name='CaptureMode']/field[@name='CAMERA_BARCODE']"
+        name="managedName">CameraBarcode</attr>
+  <attr path="/api/package[@name='com.scannervciarfid.core']/enum[@name='CaptureMode']/field[@name='CAMERA_VISION']"
+        name="managedName">CameraVision</attr>
+
+  <!--
+    ATENCAO - verifique com `dotnet build -bl` ou o log da API XML gerada:
+    metodos `getXxx()` sem setter (ex.: DataCaptureFactory.getHardwareScanner())
+    costumam virar propriedade somente-leitura (`HardwareScanner`) via
+    deteccao automatica de Java Bean. Se, na sua versao do binding
+    generator, isso NAO ocorrer, o membro sera exposto como metodo:
+    `DataCaptureFactory.GetHardwareScanner()`. Ajuste os arquivos C#
+    desta pasta (dotnet/ScannerVcIaRfid.Maui) de acordo com o que
+    for efetivamente gerado - inspecione obj/.../api.xml apos o build.
+  -->
+
+</metadata>

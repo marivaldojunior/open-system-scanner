@@ -16,7 +16,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "opensystemscanner"
+rootProject.name = "scanner-vc-ia-rfid"
 
 // O modulo da biblioteca fica na raiz (projeto ":"). ":sample" e um app
 // Android puro que a consome via project(":") - mesmo build Gradle, sempre

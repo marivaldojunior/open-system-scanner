@@ -15,7 +15,7 @@ plugins {
 }
 
 android {
-    namespace = "com.opensystemscanner"
+    namespace = "com.scannervciarfid"
     compileSdk = 36
 
     defaultConfig {
