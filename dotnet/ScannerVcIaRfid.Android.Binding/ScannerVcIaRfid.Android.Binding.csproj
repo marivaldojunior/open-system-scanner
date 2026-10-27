@@ -12,10 +12,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Build Action = AndroidLibrary. No Visual Studio, clique com o botão direito no
-         arquivo .aar -> Properties -> Build Action -> AndroidLibrary. Via CLI/csproj,
-         é exatamente este item abaixo que faz o mesmo papel. -->
-    <AndroidLibrary Include="Jars\scanner-vc-ia-rfid-release.aar" />
+    <!-- Build Action = AndroidLibrary. Um .aar por modulo nativo (core,
+         barcode-hardware, vision, vision-barcode, vision-ocr). Gere todos com
+         `./gradlew exportMauiAars` na raiz do repositorio - ver Jars/README.md. -->
+    <AndroidLibrary Include="Jars\*.aar" />
   </ItemGroup>
 
   <ItemGroup>
@@ -24,13 +24,13 @@
 
   <ItemGroup>
     <!--
-      Dependências nativas transitivas do scanner-vc-ia-rfid-release.aar.
-      O .aar embarca apenas o BYTECODE do nosso módulo; CameraX e ML Kit
-      continuam sendo "implementation" no Gradle, ou seja, o consumidor
+      Dependências nativas transitivas dos .aar em Jars/.
+      Cada .aar embarca apenas o BYTECODE do seu módulo; CameraX e ML Kit
+      continuam sendo dependências Gradle, ou seja, o consumidor
       (esta binding) precisa fornecer esses .aar/.jar em tempo de link.
-      As versões devem casar (ou ser >=) com as versões nativas usadas no
-      build.gradle.kts: CameraX 1.6.1, ML Kit Barcode 17.3.0, ML Kit Text
-      Recognition 16.0.1, Lifecycle Runtime KTX 2.11.0.
+      As versões devem casar (ou ser >=) com gradle/libs.versions.toml:
+      CameraX 1.6.1, ML Kit Barcode 17.3.0, ML Kit Text Recognition 16.0.1,
+      Lifecycle Runtime KTX 2.11.0, AndroidX Core 1.13.1.
       Atenção: os pacotes Xamarin.Google.MLKit.* usam o prefixo "1" na
       versão (ML Kit 17.3.0 = NuGet 117.3.0.x). Esses pacotes só oferecem
       assets para net9.0-android e net10.0-android - por isso o TFM é net10.

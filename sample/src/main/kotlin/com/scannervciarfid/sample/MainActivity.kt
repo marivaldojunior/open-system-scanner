@@ -7,19 +7,20 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
-import com.scannervciarfid.DataCaptureFactory
-import com.scannervciarfid.core.CaptureMode
 import com.scannervciarfid.core.ScanResult
 import com.scannervciarfid.core.ScannerListener
 import com.scannervciarfid.core.UniversalScanner
+import com.scannervciarfid.hardware.HardwareScannerFactory
 import com.scannervciarfid.sample.databinding.ActivityMainBinding
 import com.scannervciarfid.vision.VisionScannerView
+import com.scannervciarfid.vision.barcode.BarcodeEngine
+import com.scannervciarfid.vision.ocr.OcrTextEngine
 
 /**
  * Prova de uso da biblioteca scannervciarfid em Android nativo puro,
  * cobrindo as duas vias de captura simultaneamente: leitor de hardware
- * (via DataCaptureFactory.getHardwareScanner()) e camera (via
- * DataCaptureFactory.getCameraScannerView(...)). Ambas convergem para o
+ * (modulo barcode-hardware, via HardwareScannerFactory.create()) e camera
+ * (modulo vision + um motor: BarcodeEngine ou OcrTextEngine). Ambas convergem para o
  * mesmo ScannerListener, atualizando a mesma area de UI - mesmo padrao
  * usado nos samples de MAUI e Flutter deste repositorio.
  */
@@ -28,6 +29,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var hardwareScanner: UniversalScanner
     private var cameraScannerView: VisionScannerView? = null
+    private var ocrEnabled = false
 
     private val scannerListener = object : ScannerListener {
         override fun onScanSuccess(result: ScanResult) {
@@ -59,9 +61,10 @@ class MainActivity : ComponentActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        hardwareScanner = DataCaptureFactory.getHardwareScanner()
+        hardwareScanner = HardwareScannerFactory.create()
 
         binding.activateCameraButton.setOnClickListener { onActivateCameraClicked() }
+        binding.switchEngineButton.setOnClickListener { onSwitchEngineClicked() }
     }
 
     override fun onStart() {
@@ -109,7 +112,8 @@ class MainActivity : ComponentActivity() {
     private fun showCamera() {
         var view = cameraScannerView
         if (view == null) {
-            view = DataCaptureFactory.getCameraScannerView(this, CaptureMode.CAMERA_BARCODE)
+            view = VisionScannerView(this)
+            view.setVisionEngine(createEngine())
             view.setScannerListener(scannerListener)
             cameraScannerView = view
         }
@@ -119,6 +123,17 @@ class MainActivity : ComponentActivity() {
         view.startCamera()
 
         binding.activateCameraButton.text = "Ocultar Câmera"
+    }
+
+    // App nativo instancia o motor direto. As pontes MAUI/Flutter usam o
+    // VisionEngineRegistry, porque recebem o motor como texto ("barcode", "ocr").
+    private fun createEngine() = if (ocrEnabled) OcrTextEngine() else BarcodeEngine()
+
+    private fun onSwitchEngineClicked() {
+        ocrEnabled = !ocrEnabled
+        // Com a camera ligada, o motor novo passa a analisar os proximos frames.
+        cameraScannerView?.setVisionEngine(createEngine())
+        binding.switchEngineButton.text = if (ocrEnabled) "Motor: OCR" else "Motor: Código de barras"
     }
 
     private fun hideCamera() {

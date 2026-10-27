@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using ScannerVcIaRfid.Maui.Controls;
 using ScannerVcIaRfid.Maui.Models;
 using ScannerVcIaRfid.Maui.Services;
 
@@ -155,5 +156,14 @@ public partial class MainPage : ContentPage
             // EnsureCameraPermissionAsync/OnAppearing).
             CameraScannerView.StartCamera();
         }
+    }
+
+    private void OnSwitchEngineClicked(object? sender, EventArgs e)
+    {
+        // Engine e uma BindableProperty: o handler troca o motor nativo na
+        // hora, mesmo com a camera ligada.
+        var useOcr = CameraScannerView.Engine != VisionEngines.Ocr;
+        CameraScannerView.Engine = useOcr ? VisionEngines.Ocr : VisionEngines.Barcode;
+        SwitchEngineButton.Text = useOcr ? "Motor: OCR" : "Motor: Código de barras";
     }
 }

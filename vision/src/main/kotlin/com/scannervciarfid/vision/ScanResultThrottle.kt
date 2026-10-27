@@ -15,9 +15,10 @@ import android.os.SystemClock
  *   diferentes (util no OCR, onde o texto varia um pouco a cada frame).
  *
  * Chamado apenas na main thread (listeners das Tasks do ML Kit), entao nao
- * precisa de sincronizacao.
+ * precisa de sincronizacao. Publico porque os motores vivem em outros
+ * modulos (vision-barcode, vision-ocr).
  */
-internal class ScanResultThrottle(
+class ScanResultThrottle @JvmOverloads constructor(
     private val duplicateWindowMillis: Long,
     private val minIntervalMillis: Long = 0L
 ) {

@@ -1,6 +1,8 @@
 package com.scannervciarfid.flutter
 
-import com.scannervciarfid.DataCaptureFactory
+import com.scannervciarfid.hardware.HardwareScannerFactory
+import com.scannervciarfid.vision.barcode.BarcodeEngine
+import com.scannervciarfid.vision.ocr.OcrTextEngine
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.EventChannel
 
@@ -10,7 +12,7 @@ class ScannerVcIaRfidPlugin : FlutterPlugin {
     private var hardwareStreamHandler: HardwareScannerStreamHandler? = null
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-        val hardwareScanner = DataCaptureFactory.getHardwareScanner()
+        val hardwareScanner = HardwareScannerFactory.create()
 
         val streamHandler = HardwareScannerStreamHandler(
             applicationContext = binding.applicationContext,
@@ -21,6 +23,10 @@ class ScannerVcIaRfidPlugin : FlutterPlugin {
         eventChannel = EventChannel(binding.binaryMessenger, HARDWARE_EVENT_CHANNEL).apply {
             setStreamHandler(streamHandler)
         }
+
+        // O VisionScannerWidget escolhe o motor pelo id ("barcode", "ocr").
+        BarcodeEngine.register()
+        OcrTextEngine.register()
 
         binding.platformViewRegistry.registerViewFactory(
             CAMERA_VIEW_TYPE,

@@ -16,9 +16,8 @@
 
     <!--
         Container vazio de proposito: a VisionScannerView e criada
-        programaticamente via DataCaptureFactory.getCameraScannerView(...)
-        e injetada aqui - instanciar via XML direto contornaria a Factory
-        e a view nasceria sem VisionEngineAnalyzer configurado.
+        programaticamente (MainActivity.showCamera) e injetada aqui, ja com
+        o VisionEngineAnalyzer configurado.
     -->
     <FrameLayout
         android:id="@+id/cameraContainer"
@@ -33,6 +32,13 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:text="Ativar Câmera" />
+
+    <Button
+        android:id="@+id/switchEngineButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Motor: Código de barras" />
 
     <TextView
         android:layout_width="match_parent"

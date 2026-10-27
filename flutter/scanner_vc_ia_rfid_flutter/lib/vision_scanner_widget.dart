@@ -6,6 +6,15 @@ import 'scanner_vc_ia_rfid_hardware.dart' show ScanResult;
 typedef ScanResultCallback = void Function(ScanResult result);
 typedef ScanErrorCallback = void Function(String message);
 
+/// Ids dos motores de visao para [VisionScannerWidget.engine]. Espelham
+/// BarcodeEngine.ENGINE_ID e OcrTextEngine.ENGINE_ID (Kotlin). Um modulo de
+/// motor novo registra o proprio id no VisionEngineRegistry nativo - nesse
+/// caso, passe o id direto como String.
+abstract final class VisionEngines {
+  static const String barcode = 'barcode';
+  static const String ocr = 'ocr';
+}
+
 /// Renderiza a VisionScannerView nativa (CameraX + ML Kit) dentro da arvore
 /// de widgets Flutter via PlatformView.
 class VisionScannerWidget extends StatefulWidget {
@@ -13,10 +22,14 @@ class VisionScannerWidget extends StatefulWidget {
     super.key,
     required this.onScan,
     this.onScanError,
+    this.engine = VisionEngines.barcode,
   });
 
   static const String viewType = 'com.scannervciarfid/camera_view';
 
+  /// Motor de analise de frame (ver [VisionEngines]). Pode mudar com a
+  /// camera ligada: o motor novo passa a analisar os proximos frames.
+  final String engine;
   final ScanResultCallback onScan;
   final ScanErrorCallback? onScanError;
 
@@ -31,8 +44,22 @@ class _VisionScannerWidgetState extends State<VisionScannerWidget> {
   Widget build(BuildContext context) {
     return AndroidView(
       viewType: VisionScannerWidget.viewType,
+      // O motor inicial vai na criacao da view nativa; mudancas depois
+      // disso usam o metodo setEngine (ver didUpdateWidget).
+      creationParams: <String, dynamic>{'engine': widget.engine},
+      creationParamsCodec: const StandardMessageCodec(),
       onPlatformViewCreated: _onPlatformViewCreated,
     );
+  }
+
+  @override
+  void didUpdateWidget(VisionScannerWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.engine != widget.engine) {
+      _channel?.invokeMethod<void>('setEngine', widget.engine).catchError(
+        (Object error) => widget.onScanError?.call(error.toString()),
+      );
+    }
   }
 
   Future<void> _onPlatformViewCreated(int viewId) async {

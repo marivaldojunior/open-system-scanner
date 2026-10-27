@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+        Android 11+ (package visibility): sem esta declaracao, o broadcast
+        SET_CONFIG que o ZebraDataWedgeScanner envia para configurar o perfil
+        pode nao chegar ao servico DataWedge.
+    -->
+    <queries>
+        <package android:name="com.symbol.datawedge" />
+    </queries>
+
+</manifest>

@@ -28,6 +28,7 @@ class VisionScannerView @JvmOverloads constructor(
     private val analysisExecutor: ExecutorService = Executors.newSingleThreadExecutor()
 
     private var cameraProvider: ProcessCameraProvider? = null
+    private var imageAnalysis: ImageAnalysis? = null
     private var scannerListener: ScannerListener? = null
     private var visionEngine: VisionEngineAnalyzer? = null
     private var startPendingAttach = false
@@ -49,12 +50,22 @@ class VisionScannerView @JvmOverloads constructor(
 
     /**
      * Define qual Strategy de analise de frame (BarcodeEngine, OcrTextEngine,
-     * ou um motor futuro) alimenta o ImageAnalysis desta view. Deve ser
-     * chamado antes de startCamera() - ver DataCaptureFactory.getCameraScannerView().
+     * ou um motor futuro - ver VisionEngineRegistry) alimenta o ImageAnalysis
+     * desta view. Pode ser chamado antes de startCamera() ou com a camera
+     * ligada: nesse caso o motor novo passa a receber os proximos frames.
      */
     fun setVisionEngine(engine: VisionEngineAnalyzer) {
+        visionEngine?.let {
+            it.setScannerListener(null)
+            it.setGraphicOverlay(null)
+        }
+        graphicOverlay.clear()
+        graphicOverlay.postInvalidate()
+
         this.visionEngine = engine
         engine.setScannerListener(scannerListener)
+        engine.setGraphicOverlay(graphicOverlay)
+        imageAnalysis?.setAnalyzer(analysisExecutor, engine)
     }
 
     fun setScannerListener(listener: ScannerListener?) {
@@ -94,7 +105,8 @@ class VisionScannerView @JvmOverloads constructor(
             {
                 val provider = cameraProviderFuture.get()
                 cameraProvider = provider
-                bindUseCases(provider, lifecycleOwner, engine)
+                // O motor pode ter sido trocado enquanto o provider carregava.
+                bindUseCases(provider, lifecycleOwner, visionEngine ?: engine)
             },
             ContextCompat.getMainExecutor(context)
         )
@@ -109,7 +121,7 @@ class VisionScannerView @JvmOverloads constructor(
             it.setSurfaceProvider(previewView.surfaceProvider)
         }
 
-        val imageAnalysis = ImageAnalysis.Builder()
+        val analysis = ImageAnalysis.Builder()
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .build()
             .also {
@@ -122,8 +134,9 @@ class VisionScannerView @JvmOverloads constructor(
                 lifecycleOwner,
                 CameraSelector.DEFAULT_BACK_CAMERA,
                 preview,
-                imageAnalysis
+                analysis
             )
+            imageAnalysis = analysis
         } catch (e: Exception) {
             Log.e(TAG, "Failed to bind CameraX use cases", e)
             scannerListener?.onScanError("Failed to bind camera use cases: ${e.message}")
@@ -163,6 +176,7 @@ class VisionScannerView @JvmOverloads constructor(
         startPendingAttach = false
         cameraProvider?.unbindAll()
         cameraProvider = null
+        imageAnalysis = null
         super.onDetachedFromWindow()
     }
 

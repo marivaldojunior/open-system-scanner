@@ -1,4 +1,4 @@
-package com.scannervciarfid.vision
+package com.scannervciarfid.vision.barcode
 
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageProxy
@@ -7,6 +7,12 @@ import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import com.scannervciarfid.core.ScanResult
 import com.scannervciarfid.core.ScannerListener
+import com.scannervciarfid.vision.BoundingBoxGraphic
+import com.scannervciarfid.vision.GraphicOverlay
+import com.scannervciarfid.vision.ScanResultThrottle
+import com.scannervciarfid.vision.VisionEngineAnalyzer
+import com.scannervciarfid.vision.VisionEngineProvider
+import com.scannervciarfid.vision.VisionEngineRegistry
 
 class BarcodeEngine : VisionEngineAnalyzer {
 
@@ -92,8 +98,19 @@ class BarcodeEngine : VisionEngineAnalyzer {
         else -> "UNKNOWN"
     }
 
-    private companion object {
-        const val SOURCE_ENGINE = "MLKit_Barcode"
-        const val DUPLICATE_WINDOW_MS = 1500L
+    companion object {
+        /** Id usado no VisionEngineRegistry e pelas pontes MAUI/Flutter. */
+        const val ENGINE_ID = "barcode"
+
+        /** Registra este motor no VisionEngineRegistry. Pode ser chamado mais de uma vez. */
+        @JvmStatic
+        fun register() {
+            VisionEngineRegistry.register(ENGINE_ID, object : VisionEngineProvider {
+                override fun create(): VisionEngineAnalyzer = BarcodeEngine()
+            })
+        }
+
+        private const val SOURCE_ENGINE = "MLKit_Barcode"
+        private const val DUPLICATE_WINDOW_MS = 1500L
     }
 }

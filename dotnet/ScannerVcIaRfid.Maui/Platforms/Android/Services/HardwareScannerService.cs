@@ -1,6 +1,6 @@
 using Android.App;
-using Com.Scannervciarfid;
 using Com.Scannervciarfid.Core;
+using Com.Scannervciarfid.Hardware;
 using ScannerVcIaRfid.Maui.Models;
 using ScannerVcIaRfid.Maui.Platforms.Android.Native;
 using ScannerVcIaRfid.Maui.Services;
@@ -20,13 +20,9 @@ public sealed class HardwareScannerService : IHardwareScannerService, IDisposabl
 
     public HardwareScannerService()
     {
-        // Nota: dependendo de como o binding generator expoe o metodo estatico
-        // Kotlin `object DataCaptureFactory { @JvmStatic fun getHardwareScanner() }`,
-        // isto pode aparecer como propriedade (`.HardwareScanner`) ou como
-        // metodo (`.GetHardwareScanner()`) - veja Transforms/Metadata.xml.
-        _nativeScanner = DataCaptureFactory.HardwareScanner
+        _nativeScanner = HardwareScannerFactory.Create()
             ?? throw new InvalidOperationException(
-                "DataCaptureFactory.HardwareScanner retornou null - verifique o binding.");
+                "HardwareScannerFactory.Create() retornou null - verifique o binding.");
 
         _listenerWrapper = new ScannerListenerWrapper();
         _listenerWrapper.ScanSucceeded += OnNativeScanSucceeded;

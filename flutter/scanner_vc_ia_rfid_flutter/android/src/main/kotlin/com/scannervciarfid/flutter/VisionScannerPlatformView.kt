@@ -1,10 +1,10 @@
 package com.scannervciarfid.flutter
 
 import android.content.Context
-import com.scannervciarfid.DataCaptureFactory
-import com.scannervciarfid.core.CaptureMode
 import com.scannervciarfid.core.ScanResult
 import com.scannervciarfid.core.ScannerListener
+import com.scannervciarfid.vision.VisionEngineRegistry
+import com.scannervciarfid.vision.VisionScannerView
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -17,7 +17,12 @@ class VisionScannerViewFactory(
 ) : PlatformViewFactory(StandardMessageCodec.INSTANCE) {
 
     override fun create(context: Context, viewId: Int, args: Any?): PlatformView {
-        return VisionScannerPlatformView(context, messenger, viewId)
+        val engineId = (args as? Map<*, *>)?.get("engine") as? String ?: DEFAULT_ENGINE_ID
+        return VisionScannerPlatformView(context, messenger, viewId, engineId)
+    }
+
+    private companion object {
+        const val DEFAULT_ENGINE_ID = "barcode"
     }
 }
 
@@ -29,10 +34,11 @@ class VisionScannerViewFactory(
 internal class VisionScannerPlatformView(
     context: Context,
     messenger: BinaryMessenger,
-    viewId: Int
+    viewId: Int,
+    engineId: String
 ) : PlatformView, MethodChannel.MethodCallHandler {
 
-    private val nativeView = DataCaptureFactory.getCameraScannerView(context, CaptureMode.CAMERA_BARCODE)
+    private val nativeView = VisionScannerView(context)
     private val methodChannel = MethodChannel(messenger, "${ScannerVcIaRfidPlugin.CAMERA_VIEW_TYPE}_$viewId")
 
     init {
@@ -47,6 +53,19 @@ internal class VisionScannerPlatformView(
                 methodChannel.invokeMethod("onScanError", error)
             }
         })
+
+        setEngine(engineId)
+    }
+
+    /** Retorna false quando nenhum modulo registrou [engineId]. */
+    private fun setEngine(engineId: String): Boolean {
+        val engine = VisionEngineRegistry.create(engineId)
+        if (engine == null) {
+            methodChannel.invokeMethod("onScanError", "Motor de visao '$engineId' nao registrado.")
+            return false
+        }
+        nativeView.setVisionEngine(engine)
+        return true
     }
 
     override fun getView() = nativeView
@@ -56,6 +75,14 @@ internal class VisionScannerPlatformView(
             "startCamera" -> {
                 nativeView.startCamera()
                 result.success(null)
+            }
+            "setEngine" -> {
+                val engineId = call.arguments as? String
+                if (engineId != null && setEngine(engineId)) {
+                    result.success(null)
+                } else {
+                    result.error("UNKNOWN_ENGINE", "Motor de visao '$engineId' nao registrado.", null)
+                }
             }
             else -> result.notImplemented()
         }

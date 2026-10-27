@@ -11,6 +11,22 @@ namespace ScannerVcIaRfid.Maui.Controls;
 /// </summary>
 public class VisionScanner : View
 {
+    public static readonly BindableProperty EngineProperty = BindableProperty.Create(
+        nameof(Engine),
+        typeof(string),
+        typeof(VisionScanner),
+        VisionEngines.Barcode);
+
+    /// <summary>
+    /// Motor de analise de frame (ver <see cref="VisionEngines"/>). Pode mudar
+    /// com a camera ligada: o motor novo passa a analisar os proximos frames.
+    /// </summary>
+    public string Engine
+    {
+        get => (string)GetValue(EngineProperty);
+        set => SetValue(EngineProperty, value);
+    }
+
     public static readonly BindableProperty ScanCommandProperty = BindableProperty.Create(
         nameof(ScanCommand),
         typeof(ICommand),

@@ -1,6 +1,6 @@
-using Com.Scannervciarfid;
-using Com.Scannervciarfid.Core;
 using Com.Scannervciarfid.Vision;
+using Com.Scannervciarfid.Vision.Barcode;
+using Com.Scannervciarfid.Vision.Ocr;
 using Microsoft.Maui.Handlers;
 using ScannerVcIaRfid.Maui.Controls;
 using ScannerVcIaRfid.Maui.Models;
@@ -12,7 +12,10 @@ namespace ScannerVcIaRfid.Maui.Platforms.Android.Handlers;
 public sealed class VisionScannerHandler : ViewHandler<VisionScanner, VisionScannerView>
 {
     public static readonly IPropertyMapper<VisionScanner, VisionScannerHandler> Mapper =
-        new PropertyMapper<VisionScanner, VisionScannerHandler>(ViewMapper);
+        new PropertyMapper<VisionScanner, VisionScannerHandler>(ViewMapper)
+        {
+            [nameof(VisionScanner.Engine)] = MapEngine
+        };
 
     // Strict gating: StartCamera() no VisionScanner nao toca a view nativa
     // diretamente, ele so faz Handler?.Invoke(nameof(StartCamera)). Este
@@ -26,8 +29,30 @@ public sealed class VisionScannerHandler : ViewHandler<VisionScanner, VisionScan
 
     private ScannerListenerWrapper? _listenerWrapper;
 
+    static VisionScannerHandler()
+    {
+        // Os motores vivem em modulos nativos separados (vision-barcode,
+        // vision-ocr). Cada um se registra no VisionEngineRegistry, e o
+        // MapEngine abaixo escolhe pelo id recebido do VisionScanner.Engine.
+        BarcodeEngine.Register();
+        OcrTextEngine.Register();
+    }
+
     public VisionScannerHandler() : base(Mapper, CommandMapper)
     {
+    }
+
+    private static void MapEngine(VisionScannerHandler handler, VisionScanner view)
+    {
+        var engine = VisionEngineRegistry.Create(view.Engine);
+        if (engine is null)
+        {
+            view.RaiseScanError(
+                $"Motor de visao '{view.Engine}' nao registrado no VisionEngineRegistry nativo.");
+            return;
+        }
+
+        handler.PlatformView.SetVisionEngine(engine);
     }
 
     private static void MapStartCamera(VisionScannerHandler handler, VisionScanner view, object? args)
@@ -37,10 +62,9 @@ public sealed class VisionScannerHandler : ViewHandler<VisionScanner, VisionScan
 
     protected override VisionScannerView CreatePlatformView()
     {
-        // CaptureMode.CameraBarcode depende do rename feito em
-        // ScannerVcIaRfid.Android.Binding/Transforms/Metadata.xml.
-        // Sem a transformacao, use CaptureMode.CAMERA_BARCODE.
-        return DataCaptureFactory.GetCameraScannerView(Context, CaptureMode.CameraBarcode);
+        // O motor e definido pelo MapEngine, que roda logo apos o
+        // ConnectHandler (e de novo a cada mudanca de VisionScanner.Engine).
+        return new VisionScannerView(Context);
     }
 
     protected override void ConnectHandler(VisionScannerView platformView)

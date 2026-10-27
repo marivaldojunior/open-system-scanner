@@ -18,8 +18,19 @@ dependencyResolutionManagement {
 
 rootProject.name = "scanner-vc-ia-rfid"
 
-// O modulo da biblioteca fica na raiz (projeto ":"). ":sample" e um app
-// Android puro que a consome via project(":") - mesmo build Gradle, sempre
-// em sincronia com o codigo-fonte atual (sem gerar/copiar .aar manualmente,
-// como e necessario nas pontes MAUI/Flutter que sao builds separados).
+// Cada recurso e um modulo publicado como .aar proprio. O app so leva o que
+// usar: quem nao usa OCR nao embarca o ML Kit Text Recognition.
+//   core             -> contratos (ScanResult, ScannerListener, UniversalScanner)
+//   barcode-hardware -> leitores fisicos (Zebra, Datalogic, Intent generico)
+//   vision           -> VisionScannerView (CameraX) + registro de motores
+//   vision-barcode   -> motor de codigo de barras (ML Kit Barcode)
+//   vision-ocr       -> motor de OCR (ML Kit Text Recognition)
+include(":core")
+include(":barcode-hardware")
+include(":vision")
+include(":vision-barcode")
+include(":vision-ocr")
+
+// ":sample" e um app Android puro que consome os modulos via project(...) -
+// mesmo build Gradle, sempre em sincronia com o codigo-fonte atual.
 include(":sample")

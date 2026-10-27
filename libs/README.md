@@ -8,5 +8,5 @@ adapters usam apenas `BroadcastReceiver`/`Intent` padrão do Android):
 - `DatalogicSDK.jar` — Datalogic SDK (baixe no portal de developer da Datalogic).
 
 Esses arquivos são proprietários e **não devem ser versionados** no
-repositório. `build.gradle.kts` só os declara como `compileOnly` se
+repositório. `barcode-hardware/build.gradle.kts` só os declara como `compileOnly` se
 existirem localmente — sem eles, o projeto compila normalmente.

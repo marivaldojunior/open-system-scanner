@@ -5,7 +5,7 @@
              x:Class="ScannerVcIaRfid.Maui.Sample.MainPage"
              Title="ScannerVcIaRfid">
 
-    <Grid RowDefinitions="Auto,300,Auto,Auto"
+    <Grid RowDefinitions="Auto,300,Auto,Auto,Auto"
           Padding="16"
           RowSpacing="16">
 
@@ -25,7 +25,12 @@
                 Text="Ativar Câmera"
                 Clicked="OnActivateCameraClicked" />
 
-        <Label Grid.Row="3"
+        <Button x:Name="SwitchEngineButton"
+                Grid.Row="3"
+                Text="Motor: Código de barras"
+                Clicked="OnSwitchEngineClicked" />
+
+        <Label Grid.Row="4"
                Text="Ou pressione o gatilho físico do dispositivo"
                FontSize="14"
                TextColor="Gray"

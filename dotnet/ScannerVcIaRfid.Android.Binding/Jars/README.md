@@ -1,8 +1,20 @@
 # Jars/
 
-Coloque aqui o `scanner-vc-ia-rfid-release.aar` gerado pelo módulo nativo
-(build na raiz do repositório: `./gradlew assembleRelease`, saída em
-`build/outputs/aar/scanner-vc-ia-rfid-release.aar`).
+Coloque aqui os `.aar` dos módulos nativos. Na raiz do repositório, rode:
 
-O `.aar` não é versionado neste repositório (é build output, regenerável) —
-por isso esta pasta só existe no clone graças a este README.
+```bash
+./gradlew exportMauiAars
+```
+
+A task gera o build release de cada módulo e copia o resultado para esta
+pasta:
+
+- `scanner-vc-ia-rfid-core.aar`
+- `scanner-vc-ia-rfid-barcode-hardware.aar`
+- `scanner-vc-ia-rfid-vision.aar`
+- `scanner-vc-ia-rfid-vision-barcode.aar`
+- `scanner-vc-ia-rfid-vision-ocr.aar`
+
+O `.csproj` inclui todo `Jars\*.aar`. Os `.aar` não são versionados neste
+repositório (são build output, regeneráveis) — por isso esta pasta só existe
+no clone graças a este README.

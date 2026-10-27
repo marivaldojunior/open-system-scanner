@@ -15,10 +15,23 @@ buildscript {
     }
 }
 
+// Repositorio Maven gerado por `./gradlew publish` na raiz do repositorio
+// (build/maven-repo). Para usar outro repositorio (ex.: GitHub Packages
+// ou um diretorio fora do clone), defina a propriedade Gradle
+// scannerVcIaRfidMavenRepo no gradle.properties do app.
+def scannerVcIaRfidMavenRepo = project.findProperty('scannerVcIaRfidMavenRepo') ?:
+        file("${projectDir}/../../../build/maven-repo").toURI()
+
+// O repositorio vai para todos os projetos, nao so para o plugin: o modulo
+// :app tambem resolve os .aar (classpath de runtime). Declarado so no
+// plugin, o build do app falha com "Could not find com.scannervciarfid:...".
 rootProject.allprojects {
     repositories {
         google()
         mavenCentral()
+        maven {
+            url scannerVcIaRfidMavenRepo
+        }
     }
 }
 
@@ -43,30 +56,14 @@ android {
     }
 }
 
-// Torna visiveis os .aar/.jar soltos em android/libs - eh ai que deve ir o
-// scanner-vc-ia-rfid-release.aar gerado pelo modulo nativo (Etapas 1-5).
-repositories {
-    flatDir {
-        dirs 'libs'
-    }
-}
+// Mantenha igual a VERSION_NAME do gradle.properties na raiz do repositorio.
+def scannerVcIaRfidVersion = '0.1.0'
 
 dependencies {
-    // name = nome do arquivo sem extensao (libs/scanner-vc-ia-rfid-release.aar)
-    implementation(name: 'scanner-vc-ia-rfid-release', ext: 'aar')
-
-    // O .aar do nucleo nativo NAO embarca CameraX/ML Kit (foram declarados
-    // como "implementation" no build.gradle.kts dele, nao "api"), entao o
-    // consumidor final - este plugin - precisa repeti-los aqui, com as
-    // mesmas versoes usadas la (build.gradle.kts na raiz do repositorio).
-    // Versao menor que a do nucleo pode gerar NoSuchMethodError em runtime.
-    implementation 'androidx.camera:camera-core:1.6.1'
-    implementation 'androidx.camera:camera-camera2:1.6.1'
-    implementation 'androidx.camera:camera-lifecycle:1.6.1'
-    implementation 'androidx.camera:camera-view:1.6.1'
-    implementation 'com.google.mlkit:barcode-scanning:17.3.0'
-    // Sem esta dependencia, DataCaptureFactory falha com NoClassDefFoundError
-    // ao criar o OcrTextEngine (CaptureMode.CAMERA_VISION).
-    implementation 'com.google.mlkit:text-recognition:16.0.1'
-    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.11.0'
+    // O POM de cada modulo lista as proprias dependencias (core, vision,
+    // CameraX, ML Kit). O Gradle resolve tudo de forma transitiva - nao
+    // repita essas dependencias aqui.
+    implementation "com.scannervciarfid:barcode-hardware:$scannerVcIaRfidVersion"
+    implementation "com.scannervciarfid:vision-barcode:$scannerVcIaRfidVersion"
+    implementation "com.scannervciarfid:vision-ocr:$scannerVcIaRfidVersion"
 }

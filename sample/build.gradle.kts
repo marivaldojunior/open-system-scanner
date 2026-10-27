@@ -1,13 +1,9 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    // Sem versao aqui de proposito: com.android.application vem do mesmo
-    // artefato AGP que com.android.library, ja aplicado com versao 9.3.1
-    // pelo projeto raiz (:). Redeclarar uma versao aqui conflita com o
-    // classpath ja resolvido ("already on the classpath with an unknown
-    // version"). Kotlin embutido no AGP 9+ - sem plugin
-    // "org.jetbrains.kotlin.android".
-    id("com.android.application")
+    // Versao vem do libs.versions.toml (declarada com "apply false" na raiz).
+    // Kotlin embutido no AGP 9+ - sem plugin "org.jetbrains.kotlin.android".
+    alias(libs.plugins.android.application)
 }
 
 android {
@@ -49,12 +45,15 @@ kotlin {
 }
 
 dependencies {
-    // Consome o modulo nativo diretamente como projeto - sempre reflete o
-    // codigo-fonte atual de com.scannervciarfid.
-    implementation(project(":"))
+    // Consome os modulos nativos diretamente como projeto - sempre reflete o
+    // codigo-fonte atual. vision-barcode e vision-ocr trazem vision e core
+    // de forma transitiva.
+    implementation(project(":barcode-hardware"))
+    implementation(project(":vision-barcode"))
+    implementation(project(":vision-ocr"))
 
-    implementation("androidx.core:core-ktx:1.13.1")
+    implementation(libs.androidx.core.ktx)
     // Necessario para ComponentActivity.registerForActivityResult(...)
     // (fluxo de permissao de camera em runtime).
-    implementation("androidx.activity:activity-ktx:1.9.3")
+    implementation(libs.androidx.activity.ktx)
 }

@@ -1,4 +1,5 @@
-### Android / Gradle (modulo nativo na raiz) ###
+### Android / Gradle (modulos nativos) ###
+# build/ tambem cobre build/maven-repo (saida de `./gradlew publish`).
 build/
 .gradle/
 .cxx/
@@ -29,8 +30,7 @@ obj/
 *.suo
 .vs/
 
-# .aar copiado manualmente para a binding library - regenerar a partir do
-# build do modulo nativo, nao versionar o binario.
+# .aar copiados por `./gradlew exportMauiAars` - build output, nao versionar.
 dotnet/ScannerVcIaRfid.Android.Binding/Jars/*.aar
 
 ### Flutter / Dart (flutter/) ###
@@ -43,9 +43,6 @@ dotnet/ScannerVcIaRfid.Android.Binding/Jars/*.aar
 **/doc/api/
 *.g.dart
 *.freezed.dart
-
-# .aar copiado manualmente para o plugin - mesmo raciocinio do binding MAUI.
-flutter/scanner_vc_ia_rfid_flutter/android/libs/*.aar
 
 # Build/gerado por `flutter create` a cada `flutter pub get` / build
 flutter/**/android/.gradle/

@@ -1,4 +1,4 @@
-package com.scannervciarfid.vision
+package com.scannervciarfid.vision.ocr
 
 import android.graphics.Rect
 import androidx.camera.core.ExperimentalGetImage
@@ -9,6 +9,12 @@ import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.scannervciarfid.core.ScanResult
 import com.scannervciarfid.core.ScannerListener
+import com.scannervciarfid.vision.BoundingBoxGraphic
+import com.scannervciarfid.vision.GraphicOverlay
+import com.scannervciarfid.vision.ScanResultThrottle
+import com.scannervciarfid.vision.VisionEngineAnalyzer
+import com.scannervciarfid.vision.VisionEngineProvider
+import com.scannervciarfid.vision.VisionEngineRegistry
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -112,12 +118,23 @@ class OcrTextEngine : VisionEngineAnalyzer {
         put("bottom", bottom)
     }
 
-    private companion object {
-        const val SOURCE_ENGINE = "MLKit_OCR"
-        const val DUPLICATE_WINDOW_MS = 1500L
+    companion object {
+        /** Id usado no VisionEngineRegistry e pelas pontes MAUI/Flutter. */
+        const val ENGINE_ID = "ocr"
+
+        /** Registra este motor no VisionEngineRegistry. Pode ser chamado mais de uma vez. */
+        @JvmStatic
+        fun register() {
+            VisionEngineRegistry.register(ENGINE_ID, object : VisionEngineProvider {
+                override fun create(): VisionEngineAnalyzer = OcrTextEngine()
+            })
+        }
+
+        private const val SOURCE_ENGINE = "MLKit_OCR"
+        private const val DUPLICATE_WINDOW_MS = 1500L
 
         // O texto reconhecido varia um pouco a cada frame (ruido do OCR), entao
         // so o filtro de duplicados nao basta - limitamos tambem a frequencia.
-        const val MIN_EMIT_INTERVAL_MS = 1000L
+        private const val MIN_EMIT_INTERVAL_MS = 1000L
     }
 }

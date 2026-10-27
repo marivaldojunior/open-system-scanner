@@ -42,6 +42,10 @@ class _ScannerExampleScreenState extends State<ScannerExampleScreen> {
 
   StreamSubscription<ScanResult>? _hardwareSubscription;
 
+  // Motor da camera. Trocar o valor reconstroi o VisionScannerWidget, que
+  // troca o motor nativo sem recriar a camera.
+  String _engine = VisionEngines.barcode;
+
   // null = ainda verificando/pedindo permissao. O leitor de hardware nao
   // depende disso (chega via Intent do sistema/DataWedge); soh a camera.
   PermissionStatus? _cameraPermissionStatus;
@@ -153,6 +157,15 @@ class _ScannerExampleScreenState extends State<ScannerExampleScreen> {
               const Text(
                 'Pressione o gatilho físico do coletor ou aponte a câmera abaixo:',
               ),
+              const SizedBox(height: 8),
+              SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(value: VisionEngines.barcode, label: Text('Código de barras')),
+                  ButtonSegment(value: VisionEngines.ocr, label: Text('OCR')),
+                ],
+                selected: {_engine},
+                onSelectionChanged: (selection) => setState(() => _engine = selection.first),
+              ),
               const SizedBox(height: 16),
               // PlatformViews exigem dimensoes explicitas no lado Flutter -
               // sem altura definida, o AndroidView renderiza com tamanho zero.
@@ -203,6 +216,7 @@ class _ScannerExampleScreenState extends State<ScannerExampleScreen> {
     }
 
     return VisionScannerWidget(
+      engine: _engine,
       onScan: _handleScanResult,
       onScanError: _handleCameraScanError,
     );
