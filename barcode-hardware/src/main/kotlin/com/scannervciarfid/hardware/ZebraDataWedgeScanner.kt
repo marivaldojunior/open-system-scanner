@@ -19,6 +19,10 @@ class ZebraDataWedgeScanner : GenericIntentScanner(
 
     override val sourceEngine: String = "Zebra_DataWedge"
 
+    // O DataWedge envia a simbologia como "LABEL-TYPE-EAN13", "LABEL-TYPE-QRCODE"...
+    override fun readFormat(intent: Intent): String =
+        intent.getStringExtra(EXTRA_DATAWEDGE_LABEL_TYPE)?.removePrefix(LABEL_TYPE_PREFIX) ?: "UNKNOWN"
+
     override fun configureDevice(context: Context) {
         val barcodePlugin = Bundle().apply {
             putString("PLUGIN_NAME", "BARCODE")
@@ -71,6 +75,8 @@ class ZebraDataWedgeScanner : GenericIntentScanner(
     companion object {
         private const val ACTION_SCAN_OUTPUT = "com.scannervciarfid.zebra.SCAN"
         private const val EXTRA_DATAWEDGE_DATA_STRING = "com.symbol.datawedge.data_string"
+        private const val EXTRA_DATAWEDGE_LABEL_TYPE = "com.symbol.datawedge.label_type"
+        private const val LABEL_TYPE_PREFIX = "LABEL-TYPE-"
 
         private const val DATAWEDGE_PACKAGE = "com.symbol.datawedge"
         private const val ACTION_DATAWEDGE_API = "com.symbol.datawedge.api.ACTION"

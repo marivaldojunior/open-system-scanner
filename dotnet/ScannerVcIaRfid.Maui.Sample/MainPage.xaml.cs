@@ -9,12 +9,14 @@ namespace ScannerVcIaRfid.Maui.Sample;
 public partial class MainPage : ContentPage
 {
     private readonly IHardwareScannerService _hardwareScanner;
+    private readonly ICodeScannerService _codeScanner;
 
-    public MainPage(IHardwareScannerService hardwareScanner)
+    public MainPage(IHardwareScannerService hardwareScanner, ICodeScannerService codeScanner)
     {
         InitializeComponent();
 
         _hardwareScanner = hardwareScanner;
+        _codeScanner = codeScanner;
     }
 
     protected override async void OnAppearing()
@@ -155,6 +157,25 @@ public partial class MainPage : ContentPage
             // conceder a permissao numa segunda tentativa (ver
             // EnsureCameraPermissionAsync/OnAppearing).
             CameraScannerView.StartCamera();
+        }
+    }
+
+    private async void OnCodeScannerClicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            var result = await _codeScanner.ScanAsync();
+            if (result is null)
+            {
+                LastScanLabel.Text = "Leitura cancelada.";
+                return;
+            }
+
+            HandleScanResult(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            HandleScanError(ex.Message);
         }
     }
 

@@ -14,8 +14,14 @@ plugins {
     alias(libs.plugins.android.application) apply false
 }
 
-// Modulos publicados como .aar. A ordem segue o grafo de dependencias.
-val libraryModules = listOf("core", "barcode-hardware", "vision", "vision-barcode", "vision-ocr")
+// Cada binding .NET MAUI empacota so os .aar do seu dominio - um app MAUI
+// que so usa NFC nao leva CameraX nem ML Kit. Todo modulo de biblioteca
+// precisa aparecer em exatamente uma binding.
+val mauiBindings = mapOf(
+    "ScannerVcIaRfid.Android.Binding" to listOf(
+        "core", "barcode-hardware", "vision", "vision-barcode", "vision-ocr", "code-scanner"
+    )
+)
 
 allprojects {
     group = "com.scannervciarfid"
@@ -76,16 +82,19 @@ subprojects {
 }
 
 // A binding .NET nao le repositorio Maven: ela consome os .aar soltos em
-// Jars/. Esta task gera e copia todos eles com nome estavel.
+// <binding>/Jars/. Esta task gera e copia todos eles com nome estavel.
 tasks.register<Copy>("exportMauiAars") {
     group = "publishing"
-    description = "Gera os .aar release e copia para a binding .NET MAUI."
+    description = "Gera os .aar release e copia para as bindings .NET MAUI."
 
-    libraryModules.forEach { module ->
-        dependsOn(":$module:assembleRelease")
-        from(file("$module/build/outputs/aar/$module-release.aar")) {
-            rename { "scanner-vc-ia-rfid-$module.aar" }
+    mauiBindings.forEach { (binding, modules) ->
+        modules.forEach { module ->
+            dependsOn(":$module:assembleRelease")
+            from(file("$module/build/outputs/aar/$module-release.aar")) {
+                rename { "scanner-vc-ia-rfid-$module.aar" }
+                into("$binding/Jars")
+            }
         }
     }
-    into(layout.projectDirectory.dir("dotnet/ScannerVcIaRfid.Android.Binding/Jars"))
+    into(layout.projectDirectory.dir("dotnet"))
 }

@@ -14,6 +14,7 @@ pasta:
 - `scanner-vc-ia-rfid-vision.aar`
 - `scanner-vc-ia-rfid-vision-barcode.aar`
 - `scanner-vc-ia-rfid-vision-ocr.aar`
+- `scanner-vc-ia-rfid-code-scanner.aar`
 
 O `.csproj` inclui todo `Jars\*.aar`. Os `.aar` não são versionados neste
 repositório (são build output, regeneráveis) — por isso esta pasta só existe

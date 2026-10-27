@@ -38,6 +38,7 @@ class ScannerVcIaRfidHardware {
   static final ScannerVcIaRfidHardware instance = ScannerVcIaRfidHardware._();
 
   static const EventChannel _eventChannel = EventChannel('com.scannervciarfid/hardware');
+  static const MethodChannel _methodChannel = MethodChannel('com.scannervciarfid/methods');
 
   Stream<ScanResult>? _onBarcodeScanned;
 
@@ -45,5 +46,21 @@ class ScannerVcIaRfidHardware {
     return _onBarcodeScanned ??= _eventChannel
         .receiveBroadcastStream()
         .map((dynamic event) => ScanResult.fromMap(event as Map<dynamic, dynamic>));
+  }
+
+  /// Troca o leitor detectado pelo fabricante por um leitor de Intent
+  /// generico (Chainway, Sunmi, Seuic...). Use a action e o extra
+  /// configurados na saida Intent do aparelho. Uma subscription ativa de
+  /// [onBarcodeScanned] continua valendo com o leitor novo.
+  Future<void> useGenericIntent({
+    required String intentAction,
+    required String dataExtraKey,
+    String? intentCategory,
+  }) {
+    return _methodChannel.invokeMethod<void>('useGenericIntent', <String, String?>{
+      'intentAction': intentAction,
+      'dataExtraKey': dataExtraKey,
+      'intentCategory': intentCategory,
+    });
   }
 }

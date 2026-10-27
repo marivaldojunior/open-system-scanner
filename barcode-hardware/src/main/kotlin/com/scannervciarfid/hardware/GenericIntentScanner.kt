@@ -35,7 +35,7 @@ open class GenericIntentScanner @JvmOverloads constructor(
 
             val result = ScanResult(
                 value = data,
-                format = "UNKNOWN",
+                format = readFormat(intent),
                 sourceEngine = sourceEngine
             )
             scannerListener?.onScanSuccess(result)
@@ -54,6 +54,12 @@ open class GenericIntentScanner @JvmOverloads constructor(
         )
         configureDevice(appContext!!)
     }
+
+    /**
+     * Ponto de extensao para adapters cujo fabricante envia a simbologia no
+     * broadcast (ex.: label_type do DataWedge). O padrao e "UNKNOWN".
+     */
+    protected open fun readFormat(intent: Intent): String = "UNKNOWN"
 
     /**
      * Ponto de extensao para adapters que precisam configurar o servico do

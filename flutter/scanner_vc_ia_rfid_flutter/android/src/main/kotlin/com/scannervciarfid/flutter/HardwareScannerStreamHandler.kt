@@ -15,12 +15,27 @@ import io.flutter.plugin.common.EventChannel
  */
 internal class HardwareScannerStreamHandler(
     private val applicationContext: Context,
-    private val hardwareScanner: UniversalScanner
+    private var hardwareScanner: UniversalScanner
 ) : EventChannel.StreamHandler {
 
     private var initialized = false
+    private var eventSink: EventChannel.EventSink? = null
+
+    /**
+     * Troca o leitor (ex.: Intent generico configurado pelo app). Se o Dart
+     * ja escuta o stream, o leitor novo assume a mesma subscription.
+     */
+    fun replaceScanner(scanner: UniversalScanner) {
+        val sink = eventSink
+        release()
+        hardwareScanner = scanner
+        if (sink != null) {
+            onListen(null, sink)
+        }
+    }
 
     override fun onListen(arguments: Any?, events: EventChannel.EventSink) {
+        eventSink = events
         if (!initialized) {
             hardwareScanner.initialize(applicationContext)
             initialized = true
@@ -39,6 +54,7 @@ internal class HardwareScannerStreamHandler(
     }
 
     override fun onCancel(arguments: Any?) {
+        eventSink = null
         hardwareScanner.setScannerListener(null)
         hardwareScanner.stop()
     }

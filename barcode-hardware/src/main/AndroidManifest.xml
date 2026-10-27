@@ -2,12 +2,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!--
-        Android 11+ (package visibility): sem esta declaracao, o broadcast
-        SET_CONFIG que o ZebraDataWedgeScanner envia para configurar o perfil
-        pode nao chegar ao servico DataWedge.
+        Android 11+ (package visibility): sem esta declaracao, os broadcasts
+        com setPackage(...) nao chegam ao servico do fabricante - o
+        SET_CONFIG do ZebraDataWedgeScanner (DataWedge) e o CLAIM_SCANNER
+        do HoneywellIntentScanner (data collection service).
     -->
     <queries>
         <package android:name="com.symbol.datawedge" />
+        <package android:name="com.intermec.datacollectionservice" />
     </queries>
 
 </manifest>

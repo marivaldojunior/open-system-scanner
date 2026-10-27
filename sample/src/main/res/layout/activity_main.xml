@@ -40,6 +40,13 @@
         android:layout_marginTop="8dp"
         android:text="Motor: Código de barras" />
 
+    <Button
+        android:id="@+id/codeScannerButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Google Code Scanner" />
+
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

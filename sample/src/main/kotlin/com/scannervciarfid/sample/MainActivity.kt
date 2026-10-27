@@ -7,6 +7,8 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import com.scannervciarfid.codescanner.CodeScannerListener
+import com.scannervciarfid.codescanner.GoogleCodeScanner
 import com.scannervciarfid.core.ScanResult
 import com.scannervciarfid.core.ScannerListener
 import com.scannervciarfid.core.UniversalScanner
@@ -65,6 +67,7 @@ class MainActivity : ComponentActivity() {
 
         binding.activateCameraButton.setOnClickListener { onActivateCameraClicked() }
         binding.switchEngineButton.setOnClickListener { onSwitchEngineClicked() }
+        binding.codeScannerButton.setOnClickListener { onCodeScannerClicked() }
     }
 
     override fun onStart() {
@@ -134,6 +137,20 @@ class MainActivity : ComponentActivity() {
         // Com a camera ligada, o motor novo passa a analisar os proximos frames.
         cameraScannerView?.setVisionEngine(createEngine())
         binding.switchEngineButton.text = if (ocrEnabled) "Motor: OCR" else "Motor: Código de barras"
+    }
+
+    // Leitura unica pela tela do Google Play Services - nao usa a
+    // VisionScannerView nem a permissao de camera deste app.
+    private fun onCodeScannerClicked() {
+        GoogleCodeScanner.scan(this, object : CodeScannerListener {
+            override fun onScanSuccess(result: ScanResult) = scannerListener.onScanSuccess(result)
+
+            override fun onScanCanceled() {
+                Toast.makeText(this@MainActivity, "Leitura cancelada.", Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onScanError(error: String) = scannerListener.onScanError(error)
+        })
     }
 
     private fun hideCamera() {

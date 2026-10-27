@@ -63,10 +63,11 @@ flowchart TB
 | Módulo (`com.scannervciarfid:<módulo>`) | Conteúdo | Depende de |
 |---|---|---|
 | `core` | `ScanResult`, `ScannerListener`, `UniversalScanner` | — |
-| `barcode-hardware` | `HardwareScannerFactory`, adapters Zebra, Datalogic e Intent genérico | `core` |
+| `barcode-hardware` | `HardwareScannerFactory`, adapters Zebra, Datalogic, Honeywell, Newland, Urovo e Intent genérico | `core` |
 | `vision` | `VisionScannerView` (CameraX), `VisionEngineAnalyzer`, `VisionEngineRegistry`, overlay | `core`, CameraX |
 | `vision-barcode` | `BarcodeEngine` (id `"barcode"`) | `vision`, ML Kit Barcode |
 | `vision-ocr` | `OcrTextEngine` (id `"ocr"`) | `vision`, ML Kit Text Recognition |
+| `code-scanner` | `GoogleCodeScanner` (leitura única, sem permissão de câmera) | `core`, Google Play Services |
 
 Cada recurso novo (NFC, RFID UHF, IA) entra como um módulo próprio, que depende de `core`. O módulo `vision` não conhece os motores: cada motor se registra no `VisionEngineRegistry` (ex.: `BarcodeEngine.register()`), e as pontes escolhem o motor pelo id.
 
@@ -220,6 +221,20 @@ private static async Task<bool> EnsureCameraPermissionAsync()
 }
 ```
 
+**5. Leitura única com o Google Code Scanner** (opcional, exige Play Services, sem permissão de câmera):
+
+```csharp
+builder.Services.AddSingleton<ICodeScannerService, CodeScannerService>();
+
+var result = await _codeScanner.ScanAsync(); // null = usuário cancelou
+```
+
+**6. Coletor sem adapter próprio** (Chainway, Sunmi, Seuic...): configure a saída Intent no aparelho e informe a mesma action e o mesmo extra:
+
+```csharp
+_hardwareScanner.UseGenericIntent("com.minhaempresa.SCAN", "data");
+```
+
 Exemplo completo em [`dotnet/ScannerVcIaRfid.Maui.Sample`](dotnet/ScannerVcIaRfid.Maui.Sample).
 
 ### Flutter
@@ -268,6 +283,21 @@ SizedBox(
 
 `PlatformView` não tem tamanho intrínseco no Flutter: sem altura definida, o `AndroidView` renderiza com altura zero.
 
+**5. Leitura única com o Google Code Scanner** (opcional, exige Play Services, sem permissão de câmera):
+
+```dart
+final result = await ScannerVcIaRfidCodeScanner.instance.scan(); // null = cancelado
+```
+
+**6. Coletor sem adapter próprio** (Chainway, Sunmi, Seuic...): configure a saída Intent no aparelho e informe a mesma action e o mesmo extra:
+
+```dart
+await ScannerVcIaRfidHardware.instance.useGenericIntent(
+  intentAction: 'com.minhaempresa.SCAN',
+  dataExtraKey: 'data',
+);
+```
+
 Exemplo completo em [`flutter/scanner_vc_ia_rfid_flutter/example`](flutter/scanner_vc_ia_rfid_flutter/example).
 
 ---
@@ -276,10 +306,14 @@ Exemplo completo em [`flutter/scanner_vc_ia_rfid_flutter/example`](flutter/scann
 
 | `sourceEngine` | Origem |
 |---|---|
-| `Zebra_DataWedge` | Perfil DataWedge de coletores Zebra |
+| `Zebra_DataWedge` | Perfil DataWedge de coletores Zebra. `format` vem do `label_type` (ex.: `EAN13`) |
 | `Datalogic_Intent` | Intent Wedge de coletores Datalogic |
-| `Generic_Intent` | Fallback configurável para qualquer coletor baseado em Intent |
+| `Honeywell_Intent` | Intent API de coletores Honeywell |
+| `Newland_Intent` | Saída por broadcast de coletores Newland |
+| `Urovo_Intent` | Saída Intent de coletores Urovo |
+| `Generic_Intent` | Leitor de Intent genérico (`createGeneric` / `UseGenericIntent` / `useGenericIntent`) |
 | `MLKit_Barcode` | Código de barras lido pela câmera (CameraX + ML Kit Barcode Scanning) |
+| `Google_CodeScanner` | Código de barras lido pela tela do Google Code Scanner |
 | `MLKit_OCR` | Texto lido pela câmera (CameraX + ML Kit Text Recognition). `value` é um JSON com `fullText` e `blocks` |
 
 A câmera não envia um resultado a cada frame. Um valor igual ao anterior só é enviado de novo depois de 1,5 s fora do quadro. No OCR, o intervalo mínimo entre dois resultados é de 1 s.
@@ -288,6 +322,13 @@ A câmera não envia um resultado a cada frame. Um valor igual ao anterior só �
 
 - **Zebra:** em `initialize()`, a biblioteca envia um `SET_CONFIG` ao DataWedge. Esse comando cria o perfil `ScannerVcIaRfid_<package>` (se ele não existir), associa o perfil ao app, liga a saída Intent (broadcast, action `com.scannervciarfid.zebra.SCAN`) e desliga a saída Keystroke. Se um MDM já associou o app a outro perfil, configure nesse perfil a mesma action, com entrega por broadcast.
 - **Datalogic:** ative o Intent Wedge nas configurações de Scanner do aparelho, com entrega por broadcast, action `com.datalogic.decodewedge.decode_action` e categoria `com.datalogic.decodewedge.decode_category`. Alguns modelos usam outros valores de fábrica.
+- **Honeywell:** em `start()`, a biblioteca reivindica o leitor (`ACTION_CLAIM_SCANNER`) com a saída Data Intent na action `com.scannervciarfid.honeywell.SCAN`. Em `stop()`, ela devolve o leitor (`ACTION_RELEASE_SCANNER`). Se o firmware não aceitar o claim, configure o Data Intent no perfil do aparelho e use o leitor genérico.
+- **Newland:** em `initialize()`, a biblioteca envia `ACTION_BAR_SCANCFG` com `EXTRA_SCAN_MODE = 3` (saída por broadcast). A leitura chega em `nlscan.action.SCANNER_RESULT`, extra `SCAN_BARCODE1`.
+- **Urovo:** coloque o modo de saída em "Intent" (Configurações > Scanner ou ScanWedge). A biblioteca escuta os valores de fábrica: action `android.intent.ACTION_DECODE_DATA`, extra `barcode_string`.
+- **Outros (Chainway, Sunmi, Seuic...):** configure a saída Intent no app do aparelho (ex.: Keyboard Emulator, InfoWedge) e use o leitor genérico com a mesma action e o mesmo extra.
+
+> [!NOTE]
+> Os adapters Honeywell, Newland e Urovo seguem a documentação dos fabricantes, mas ainda não foram testados em aparelho. Os nomes de action e extra podem mudar entre firmwares.
 
 ## Requisitos
 
@@ -298,6 +339,7 @@ A câmera não envia um resultado a cada frame. Um valor igual ao anterior só �
 | Android Gradle Plugin | 9.3.1 |
 | CameraX | 1.6.1 |
 | Google ML Kit Barcode Scanning | 17.3.0 |
+| Google Play Services Code Scanner | 16.1.0 |
 | Google ML Kit Text Recognition | 16.0.1 |
 | .NET | 10.0 (`net10.0-android`) |
 | Flutter | 3.19+ / Dart 3.3+ |

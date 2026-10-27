@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:scanner_vc_ia_rfid_flutter/code_scanner.dart';
 import 'package:scanner_vc_ia_rfid_flutter/scanner_vc_ia_rfid_hardware.dart';
 import 'package:scanner_vc_ia_rfid_flutter/vision_scanner_widget.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -116,6 +118,17 @@ class _ScannerExampleScreenState extends State<ScannerExampleScreen> {
     }
   }
 
+  Future<void> _scanWithCodeScanner() async {
+    try {
+      final result = await ScannerVcIaRfidCodeScanner.instance.scan();
+      if (result != null) {
+        _handleScanResult(result);
+      }
+    } on PlatformException catch (error) {
+      debugPrint('[ScannerVcIaRfid] erro no Google Code Scanner: ${error.message}');
+    }
+  }
+
   void _handleCameraScanError(String message) {
     debugPrint('[ScannerVcIaRfid] erro na leitura via camera: $message');
   }
@@ -165,6 +178,11 @@ class _ScannerExampleScreenState extends State<ScannerExampleScreen> {
                 ],
                 selected: {_engine},
                 onSelectionChanged: (selection) => setState(() => _engine = selection.first),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton(
+                onPressed: _scanWithCodeScanner,
+                child: const Text('Google Code Scanner'),
               ),
               const SizedBox(height: 16),
               // PlatformViews exigem dimensoes explicitas no lado Flutter -

@@ -20,10 +20,26 @@ object HardwareScannerFactory {
         return when {
             manufacturer.contains("zebra") -> ZebraDataWedgeScanner()
             manufacturer.contains("datalogic") -> DatalogicIntentScanner()
+            manufacturer.contains("honeywell") -> HoneywellIntentScanner()
+            manufacturer.contains("newland") -> NewlandIntentScanner()
+            manufacturer.contains("urovo") -> UrovoIntentScanner()
             else -> GenericIntentScanner(
                 intentAction = FALLBACK_INTENT_ACTION,
                 dataExtraKey = FALLBACK_DATA_EXTRA_KEY
             )
         }
     }
+
+    /**
+     * Leitor para qualquer coletor que envie a leitura por broadcast
+     * (Chainway, Sunmi, Seuic...). Use os mesmos valores configurados na
+     * saida Intent do aparelho (ex.: app Keyboard Emulator / InfoWedge).
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun createGeneric(
+        intentAction: String,
+        dataExtraKey: String,
+        intentCategory: String? = null
+    ): UniversalScanner = GenericIntentScanner(intentAction, dataExtraKey, intentCategory)
 }

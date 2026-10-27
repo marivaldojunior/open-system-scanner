@@ -30,6 +30,7 @@ public static class MauiProgram
         // durante todo o ciclo de vida do app.
 #if ANDROID
         builder.Services.AddSingleton<IHardwareScannerService, HardwareScannerService>();
+        builder.Services.AddSingleton<ICodeScannerService, CodeScannerService>();
 #endif
 
         builder.Services.AddTransient<MainPage>();

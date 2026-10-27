@@ -25,11 +25,13 @@ rootProject.name = "scanner-vc-ia-rfid"
 //   vision           -> VisionScannerView (CameraX) + registro de motores
 //   vision-barcode   -> motor de codigo de barras (ML Kit Barcode)
 //   vision-ocr       -> motor de OCR (ML Kit Text Recognition)
+//   code-scanner     -> Google Code Scanner (sem permissao de camera, exige Play Services)
 include(":core")
 include(":barcode-hardware")
 include(":vision")
 include(":vision-barcode")
 include(":vision-ocr")
+include(":code-scanner")
 
 // ":sample" e um app Android puro que consome os modulos via project(...) -
 // mesmo build Gradle, sempre em sincronia com o codigo-fonte atual.

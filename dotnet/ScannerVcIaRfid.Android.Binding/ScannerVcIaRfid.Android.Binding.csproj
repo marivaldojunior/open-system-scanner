@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <!-- Build Action = AndroidLibrary. Um .aar por modulo nativo (core,
-         barcode-hardware, vision, vision-barcode, vision-ocr). Gere todos com
+         barcode-hardware, vision, vision-barcode, vision-ocr, code-scanner). Gere todos com
          `./gradlew exportMauiAars` na raiz do repositorio - ver Jars/README.md. -->
     <AndroidLibrary Include="Jars\*.aar" />
   </ItemGroup>
@@ -42,6 +42,8 @@
     <PackageReference Include="Xamarin.AndroidX.Lifecycle.Runtime.Ktx" Version="2.11.0.*" />
     <PackageReference Include="Xamarin.Google.MLKit.BarcodeScanning" Version="117.3.0.*" />
     <PackageReference Include="Xamarin.Google.MLKit.TextRecognition" Version="116.0.1.*" />
+    <!-- play-services-code-scanner 16.1.0 (modulo code-scanner). -->
+    <PackageReference Include="Xamarin.GooglePlayServices.Code.Scanner" Version="116.1.0.*" />
 
     <!--
       CameraX 1.6 / Lifecycle 2.11 sobem Fragment, Collection e Tracing para

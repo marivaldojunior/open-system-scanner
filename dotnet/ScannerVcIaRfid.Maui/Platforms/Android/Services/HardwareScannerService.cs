@@ -10,7 +10,7 @@ namespace ScannerVcIaRfid.Maui.Platforms.Android.Services;
 
 public sealed class HardwareScannerService : IHardwareScannerService, IDisposable
 {
-    private readonly IUniversalScanner _nativeScanner;
+    private IUniversalScanner _nativeScanner;
     private readonly ScannerListenerWrapper _listenerWrapper;
     private bool _disposed;
     private bool _initialized;
@@ -27,6 +27,24 @@ public sealed class HardwareScannerService : IHardwareScannerService, IDisposabl
         _listenerWrapper = new ScannerListenerWrapper();
         _listenerWrapper.ScanSucceeded += OnNativeScanSucceeded;
         _listenerWrapper.ScanFailed += OnNativeScanFailed;
+    }
+
+    public void UseGenericIntent(string intentAction, string dataExtraKey, string? intentCategory = null)
+    {
+        var wasInitialized = _initialized;
+        if (wasInitialized)
+        {
+            Release();
+        }
+
+        _nativeScanner = HardwareScannerFactory.CreateGeneric(intentAction, dataExtraKey, intentCategory)
+            ?? throw new InvalidOperationException(
+                "HardwareScannerFactory.CreateGeneric() retornou null - verifique o binding.");
+
+        if (wasInitialized)
+        {
+            Initialize();
+        }
     }
 
     public void Initialize()
