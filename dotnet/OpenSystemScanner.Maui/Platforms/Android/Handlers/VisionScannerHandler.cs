@@ -5,6 +5,7 @@ using Microsoft.Maui.Handlers;
 using OpenSystemScanner.Maui.Controls;
 using OpenSystemScanner.Maui.Models;
 using OpenSystemScanner.Maui.Platforms.Android.Native;
+using ScanErrorEventArgs = OpenSystemScanner.Maui.Models.ScanErrorEventArgs;
 
 namespace OpenSystemScanner.Maui.Platforms.Android.Handlers;
 

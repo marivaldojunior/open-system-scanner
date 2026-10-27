@@ -1,6 +1,7 @@
 package com.opensystemscanner.vision
 
 import android.content.Context
+import android.content.ContextWrapper
 import android.util.AttributeSet
 import android.util.Log
 import android.widget.FrameLayout
@@ -29,6 +30,7 @@ class VisionScannerView @JvmOverloads constructor(
     private var cameraProvider: ProcessCameraProvider? = null
     private var scannerListener: ScannerListener? = null
     private var visionEngine: VisionEngineAnalyzer? = null
+    private var startPendingAttach = false
 
     init {
         addView(
@@ -70,10 +72,18 @@ class VisionScannerView @JvmOverloads constructor(
             return
         }
 
-        val lifecycleOwner = findViewTreeLifecycleOwner()
+        // Pontes como o PlatformView do Flutter pedem startCamera() logo na
+        // criacao da view, antes do attach. Em vez de falhar, adiamos o
+        // inicio para onAttachedToWindow().
+        if (!isAttachedToWindow) {
+            startPendingAttach = true
+            return
+        }
+
+        val lifecycleOwner = resolveLifecycleOwner()
         if (lifecycleOwner == null) {
-            val message = "VisionScannerView.startCamera() was called before the view was attached " +
-                "to a window with a LifecycleOwner. Attach the view first."
+            val message = "VisionScannerView.startCamera() nao encontrou um LifecycleOwner: a view " +
+                "nao esta em uma Activity/Fragment com Lifecycle do AndroidX."
             Log.e(TAG, message)
             scannerListener?.onScanError(message)
             return
@@ -120,7 +130,37 @@ class VisionScannerView @JvmOverloads constructor(
         }
     }
 
+    /**
+     * findViewTreeLifecycleOwner() so funciona quando a Activity registra o
+     * owner na arvore de views (ComponentActivity/AppCompatActivity fazem
+     * isso). FlutterActivity herda de Activity "pura" e nao registra - mas
+     * implementa LifecycleOwner. Por isso, como fallback, procuramos um
+     * LifecycleOwner na cadeia de Context (o Flutter entrega a Activity
+     * envolvida em um MutableContextWrapper).
+     */
+    private fun resolveLifecycleOwner(): LifecycleOwner? {
+        findViewTreeLifecycleOwner()?.let { return it }
+
+        var current: Context? = context
+        while (current != null) {
+            if (current is LifecycleOwner) {
+                return current
+            }
+            current = (current as? ContextWrapper)?.baseContext
+        }
+        return null
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        if (startPendingAttach) {
+            startPendingAttach = false
+            startCamera()
+        }
+    }
+
     override fun onDetachedFromWindow() {
+        startPendingAttach = false
         cameraProvider?.unbindAll()
         cameraProvider = null
         super.onDetachedFromWindow()

@@ -4,9 +4,9 @@
     <!--
       Etapa 6 foca exclusivamente em Android. Quando as implementacoes de
       iOS/Windows existirem, adicione os TFMs correspondentes aqui, por
-      exemplo: net8.0-ios;net8.0-maccatalyst;net8.0-windows10.0.19041.0
+      exemplo: net10.0-ios;net10.0-maccatalyst;net10.0-windows10.0.19041.0
     -->
-    <TargetFrameworks>net8.0-android</TargetFrameworks>
+    <TargetFrameworks>net10.0-android</TargetFrameworks>
     <UseMaui>true</UseMaui>
     <SingleProject>true</SingleProject>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -18,6 +18,11 @@
   <PropertyGroup Condition="$(TargetFramework.Contains('-android'))">
     <SupportedOSPlatformVersion>24.0</SupportedOSPlatformVersion>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Desde o .NET 8, UseMaui nao inclui mais os pacotes do MAUI sozinho (aviso MA002). -->
+    <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+  </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework.Contains('-android'))">
     <ProjectReference Include="..\OpenSystemScanner.Android.Binding\OpenSystemScanner.Android.Binding.csproj" />

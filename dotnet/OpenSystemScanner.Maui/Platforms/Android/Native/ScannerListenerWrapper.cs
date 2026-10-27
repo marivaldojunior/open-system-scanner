@@ -1,6 +1,8 @@
 using Com.Opensystemscanner.Core;
 using OpenSystemScanner.Maui.Models;
 using AndroidScanResult = Com.Opensystemscanner.Core.ScanResult;
+using ScanErrorEventArgs = OpenSystemScanner.Maui.Models.ScanErrorEventArgs;
+using ScanResult = OpenSystemScanner.Maui.Models.ScanResult;
 
 namespace OpenSystemScanner.Maui.Platforms.Android.Native;
 

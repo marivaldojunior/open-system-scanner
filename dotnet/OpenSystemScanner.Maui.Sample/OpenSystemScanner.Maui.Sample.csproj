@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <!-- Etapa 8 foca exclusivamente em Android, assim como as etapas anteriores da ponte MAUI. -->
-    <TargetFrameworks>net8.0-android</TargetFrameworks>
+    <TargetFrameworks>net10.0-android</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <RootNamespace>OpenSystemScanner.Maui.Sample</RootNamespace>
     <UseMaui>true</UseMaui>
@@ -26,6 +26,10 @@
       nao para ser um app publicavel. Adicione os assets de Resources\ quando
       este sample evoluir para um app real.
     -->
+    <!-- Desde o .NET 8, UseMaui nao inclui mais os pacotes do MAUI sozinho (aviso MA002). -->
+    <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+    <!-- Necessario para builder.Logging.AddDebug() em MauiProgram.cs. -->
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
     <ProjectReference Include="..\OpenSystemScanner.Maui\OpenSystemScanner.Maui.csproj" />
   </ItemGroup>
 

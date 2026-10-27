@@ -29,4 +29,13 @@
         android:name="android.hardware.camera.autofocus"
         android:required="false" />
 
+    <!--
+        Android 11+ (package visibility): sem esta declaracao, o broadcast
+        SET_CONFIG que o ZebraDataWedgeScanner envia para configurar o perfil
+        pode nao chegar ao servico DataWedge.
+    -->
+    <queries>
+        <package android:name="com.symbol.datawedge" />
+    </queries>
+
 </manifest>
