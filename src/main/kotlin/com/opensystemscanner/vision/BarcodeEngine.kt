@@ -13,6 +13,7 @@ class BarcodeEngine : VisionEngineAnalyzer {
     private val barcodeScanner = BarcodeScanning.getClient()
     private var scannerListener: ScannerListener? = null
     private var graphicOverlay: GraphicOverlay? = null
+    private val throttle = ScanResultThrottle(duplicateWindowMillis = DUPLICATE_WINDOW_MS)
 
     override fun setScannerListener(listener: ScannerListener?) {
         this.scannerListener = listener
@@ -49,6 +50,9 @@ class BarcodeEngine : VisionEngineAnalyzer {
 
         val barcode = barcodes.firstOrNull() ?: return
         val rawValue = barcode.rawValue ?: return
+        if (!throttle.shouldEmit(rawValue)) {
+            return
+        }
 
         val result = ScanResult(
             value = rawValue,
@@ -61,7 +65,7 @@ class BarcodeEngine : VisionEngineAnalyzer {
     private fun drawBoundingBoxes(barcodes: List<Barcode>, imageProxy: ImageProxy) {
         val overlay = graphicOverlay ?: return
 
-        overlay.setImageSourceInfo(imageProxy.width, imageProxy.height)
+        overlay.setImageSourceInfo(imageProxy.width, imageProxy.height, imageProxy.imageInfo.rotationDegrees)
 
         for (barcode in barcodes) {
             val boundingBox = barcode.boundingBox ?: continue
@@ -90,5 +94,6 @@ class BarcodeEngine : VisionEngineAnalyzer {
 
     private companion object {
         const val SOURCE_ENGINE = "MLKit_Barcode"
+        const val DUPLICATE_WINDOW_MS = 1500L
     }
 }

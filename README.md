@@ -4,7 +4,7 @@
 
 O `OpenSystemScanner` unifica, sob uma única fachada nativa em Kotlin, duas formas completamente diferentes de capturar código de barras em um dispositivo Android corporativo:
 
-- **Hardware físico** — coletores Zebra (perfis DataWedge) e Datalogic (Intent API), além de qualquer leitor genérico baseado em Intent, todos escutados via `BroadcastReceiver`.
+- **Hardware físico** — coletores Zebra (perfis DataWedge) e Datalogic (Intent Wedge), além de qualquer leitor genérico baseado em Intent, todos escutados via `BroadcastReceiver`.
 - **Câmera** — leitura óptica via **CameraX** + **Google ML Kit Barcode Scanning**, quando o aparelho não tem um leitor dedicado.
 
 O time de app nunca precisa saber qual fabricante está por trás do coletor, nem lidar com CameraX diretamente: tudo passa por um único ponto de entrada (`DataCaptureFactory`), consumido de forma nativa, via **.NET MAUI** (Android Binding Library) ou via **Flutter** (Platform Channels).
@@ -64,7 +64,7 @@ compileOnly(files("libs/EMDK.jar"))
 compileOnly(files("libs/DatalogicSDK.jar"))
 ```
 
-Esses `.jar` já existem no firmware dos coletores físicos — declará-los como `implementation` embarcaria binários redundantes no `.aar`, inflando o pacote e arriscando conflito de classes com a versão que o próprio aparelho carrega. Na prática, nem é preciso tocar diretamente nessas APIs proprietárias: os adapters de hardware (`ZebraDataWedgeScanner`, `DatalogicIntentScanner`) escutam apenas o resultado da leitura via `BroadcastReceiver`/Intents padrão do Android (perfis DataWedge, Intent API da Datalogic).
+Esses `.jar` já existem no firmware dos coletores físicos — declará-los como `implementation` embarcaria binários redundantes no `.aar`, inflando o pacote e arriscando conflito de classes com a versão que o próprio aparelho carrega. Na prática, nem é preciso tocar diretamente nessas APIs proprietárias: os adapters de hardware (`ZebraDataWedgeScanner`, `DatalogicIntentScanner`) escutam apenas o resultado da leitura via `BroadcastReceiver`/Intents padrão do Android (perfis DataWedge, Intent Wedge da Datalogic).
 
 **API pública sem recursos exclusivos do Kotlin.** `ScannerListener`, `UniversalScanner`, `ScanResult` e `CaptureMode` são, propositalmente, Kotlin "sem açúcar": interfaces com métodos tradicionais (`onScanSuccess`/`onScanError`) em vez de `Flow`, nenhuma `suspend fun` pública, nenhuma `inline fun` ou lambda complexo na assinatura pública, e um `data class` com propriedades `String` simples. Geradores de binding (o `class-parse` do .NET Android SDK, o Platform Channel do Flutter) interpretam interfaces e enums Java/Kotlin clássicos sem problema — mas não sabem o que fazer com corrotinas. Restringir a API pública a listeners e classes de dados primitivas é o que permite o **mesmo** `.aar` virar consumível, de forma idêntica, por C# e por Dart.
 
@@ -227,9 +227,17 @@ Exemplo completo em [`flutter/opensystemscanner_flutter/example`](flutter/opensy
 | `sourceEngine` | Origem |
 |---|---|
 | `Zebra_DataWedge` | Perfil DataWedge de coletores Zebra |
-| `Datalogic_Intent` | Intent API de coletores Datalogic |
+| `Datalogic_Intent` | Intent Wedge de coletores Datalogic |
 | `Generic_Intent` | Fallback configurável para qualquer coletor baseado em Intent |
-| `MLKit_Camera` | Câmera do aparelho via CameraX + Google ML Kit |
+| `MLKit_Barcode` | Código de barras lido pela câmera (CameraX + ML Kit Barcode Scanning) |
+| `MLKit_OCR` | Texto lido pela câmera (CameraX + ML Kit Text Recognition). `value` é um JSON com `fullText` e `blocks` |
+
+A câmera não envia um resultado a cada frame. Um valor igual ao anterior só é enviado de novo depois de 1,5 s fora do quadro. No OCR, o intervalo mínimo entre dois resultados é de 1 s.
+
+## Configuração dos coletores físicos
+
+- **Zebra:** em `initialize()`, a biblioteca envia um `SET_CONFIG` ao DataWedge. Esse comando cria o perfil `OpenSystemScanner_<package>` (se ele não existir), associa o perfil ao app, liga a saída Intent (broadcast, action `com.opensystemscanner.zebra.SCAN`) e desliga a saída Keystroke. Se um MDM já associou o app a outro perfil, configure nesse perfil a mesma action, com entrega por broadcast.
+- **Datalogic:** ative o Intent Wedge nas configurações de Scanner do aparelho, com entrega por broadcast, action `com.datalogic.decodewedge.decode_action` e categoria `com.datalogic.decodewedge.decode_category`. Alguns modelos usam outros valores de fábrica.
 
 ## Requisitos
 
@@ -237,7 +245,8 @@ Exemplo completo em [`flutter/opensystemscanner_flutter/example`](flutter/opensy
 |---|---|
 | `compileSdk` (núcleo Android) | 36 |
 | `minSdk` (núcleo Android) | 24 |
-| CameraX | 1.3.4 |
+| CameraX | 1.6.1 |
 | Google ML Kit Barcode Scanning | 17.3.0 |
-| .NET | 8.0 (`net8.0-android`) |
+| Google ML Kit Text Recognition | 16.0.1 |
+| .NET | 10.0 (`net10.0-android`) |
 | Flutter | 3.19+ / Dart 3.3+ |

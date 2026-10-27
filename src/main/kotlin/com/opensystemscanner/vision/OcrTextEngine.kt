@@ -25,6 +25,10 @@ class OcrTextEngine : VisionEngineAnalyzer {
     private val textRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
     private var scannerListener: ScannerListener? = null
     private var graphicOverlay: GraphicOverlay? = null
+    private val throttle = ScanResultThrottle(
+        duplicateWindowMillis = DUPLICATE_WINDOW_MS,
+        minIntervalMillis = MIN_EMIT_INTERVAL_MS
+    )
 
     override fun setScannerListener(listener: ScannerListener?) {
         this.scannerListener = listener
@@ -59,7 +63,7 @@ class OcrTextEngine : VisionEngineAnalyzer {
     private fun handleTextResult(visionText: Text, imageProxy: ImageProxy) {
         drawBoundingBoxes(visionText, imageProxy)
 
-        if (visionText.text.isEmpty()) {
+        if (visionText.text.isEmpty() || !throttle.shouldEmit(visionText.text)) {
             return
         }
 
@@ -74,7 +78,7 @@ class OcrTextEngine : VisionEngineAnalyzer {
     private fun drawBoundingBoxes(visionText: Text, imageProxy: ImageProxy) {
         val overlay = graphicOverlay ?: return
 
-        overlay.setImageSourceInfo(imageProxy.width, imageProxy.height)
+        overlay.setImageSourceInfo(imageProxy.width, imageProxy.height, imageProxy.imageInfo.rotationDegrees)
 
         for (block in visionText.textBlocks) {
             val boundingBox = block.boundingBox ?: continue
@@ -110,5 +114,10 @@ class OcrTextEngine : VisionEngineAnalyzer {
 
     private companion object {
         const val SOURCE_ENGINE = "MLKit_OCR"
+        const val DUPLICATE_WINDOW_MS = 1500L
+
+        // O texto reconhecido varia um pouco a cada frame (ruido do OCR), entao
+        // so o filtro de duplicados nao basta - limitamos tambem a frequencia.
+        const val MIN_EMIT_INTERVAL_MS = 1000L
     }
 }

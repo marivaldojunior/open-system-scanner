@@ -9,9 +9,13 @@ import com.opensystemscanner.core.ScanResult
 import com.opensystemscanner.core.ScannerListener
 import com.opensystemscanner.core.UniversalScanner
 
-open class GenericIntentScanner(
+open class GenericIntentScanner @JvmOverloads constructor(
     private val intentAction: String,
-    private val dataExtraKey: String
+    private val dataExtraKey: String,
+    // Alguns fabricantes (ex.: Datalogic Intent Wedge) enviam o broadcast com
+    // uma categoria. Um IntentFilter so casa se contiver TODAS as categorias
+    // do Intent - sem declarar a categoria aqui, o broadcast nunca chega.
+    private val intentCategory: String? = null
 ) : UniversalScanner {
 
     protected open val sourceEngine: String = "Generic_Intent"
@@ -41,12 +45,23 @@ open class GenericIntentScanner(
     override fun initialize(context: Context) {
         appContext = context.applicationContext
         val filter = IntentFilter(intentAction)
+        intentCategory?.let { filter.addCategory(it) }
         ContextCompat.registerReceiver(
             appContext!!,
             receiver,
             filter,
             ContextCompat.RECEIVER_EXPORTED
         )
+        configureDevice(appContext!!)
+    }
+
+    /**
+     * Ponto de extensao para adapters que precisam configurar o servico do
+     * fabricante (ex.: criar o perfil DataWedge da Zebra) para que ele envie
+     * as leituras com a mesma action/extra registradas em initialize().
+     */
+    protected open fun configureDevice(context: Context) {
+        // No-op: o leitor generico depende de configuracao manual no aparelho.
     }
 
     override fun start() {

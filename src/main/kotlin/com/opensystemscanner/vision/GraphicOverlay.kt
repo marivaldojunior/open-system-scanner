@@ -38,6 +38,21 @@ class GraphicOverlay @JvmOverloads constructor(
         this.imageHeight = imageHeight
     }
 
+    /**
+     * Variante para frames do CameraX: o ImageProxy informa largura/altura do
+     * sensor (sem rotacao), mas o ML Kit devolve as coordenadas na imagem ja
+     * rotacionada para a orientacao "em pe". Com rotacao de 90/270 graus
+     * (aparelho em retrato), largura e altura precisam ser trocadas - senao
+     * os bounding boxes ficam deslocados e esticados.
+     */
+    fun setImageSourceInfo(imageWidth: Int, imageHeight: Int, rotationDegrees: Int) {
+        if (rotationDegrees == 90 || rotationDegrees == 270) {
+            setImageSourceInfo(imageHeight, imageWidth)
+        } else {
+            setImageSourceInfo(imageWidth, imageHeight)
+        }
+    }
+
     fun add(graphic: Graphic) {
         graphics.add(graphic)
     }

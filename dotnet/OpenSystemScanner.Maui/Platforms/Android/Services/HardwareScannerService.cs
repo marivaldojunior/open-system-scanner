@@ -4,12 +4,13 @@ using Com.Opensystemscanner.Core;
 using OpenSystemScanner.Maui.Models;
 using OpenSystemScanner.Maui.Platforms.Android.Native;
 using OpenSystemScanner.Maui.Services;
+using ScanErrorEventArgs = OpenSystemScanner.Maui.Models.ScanErrorEventArgs;
 
 namespace OpenSystemScanner.Maui.Platforms.Android.Services;
 
 public sealed class HardwareScannerService : IHardwareScannerService, IDisposable
 {
-    private readonly UniversalScanner _nativeScanner;
+    private readonly IUniversalScanner _nativeScanner;
     private readonly ScannerListenerWrapper _listenerWrapper;
     private bool _disposed;
     private bool _initialized;
@@ -46,7 +47,7 @@ public sealed class HardwareScannerService : IHardwareScannerService, IDisposabl
             return;
         }
 
-        _nativeScanner.Initialize(Application.Context);
+        _nativeScanner.Initialize(global::Android.App.Application.Context);
         _nativeScanner.SetScannerListener(_listenerWrapper);
         _initialized = true;
     }
