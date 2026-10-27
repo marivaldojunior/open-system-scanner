@@ -1,0 +1,27 @@
+name: scanner_vc_ia_rfid_flutter
+description: >
+  Plugin Flutter para a biblioteca nativa scannervciarfid (Android) -
+  leitura de codigo de barras via hardware (Zebra/Datalogic/generico) e
+  via camera (CameraX + Google ML Kit).
+version: 0.1.0
+homepage:
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+  flutter: '>=3.19.0'
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.scannervciarfid.flutter
+        pluginClass: ScannerVcIaRfidPlugin
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0

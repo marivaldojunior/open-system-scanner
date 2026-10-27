@@ -31,7 +31,7 @@ obj/
 
 # .aar copiado manualmente para a binding library - regenerar a partir do
 # build do modulo nativo, nao versionar o binario.
-dotnet/OpenSystemScanner.Android.Binding/Jars/*.aar
+dotnet/ScannerVcIaRfid.Android.Binding/Jars/*.aar
 
 ### Flutter / Dart (flutter/) ###
 .dart_tool/
@@ -45,7 +45,7 @@ dotnet/OpenSystemScanner.Android.Binding/Jars/*.aar
 *.freezed.dart
 
 # .aar copiado manualmente para o plugin - mesmo raciocinio do binding MAUI.
-flutter/opensystemscanner_flutter/android/libs/*.aar
+flutter/scanner_vc_ia_rfid_flutter/android/libs/*.aar
 
 # Build/gerado por `flutter create` a cada `flutter pub get` / build
 flutter/**/android/.gradle/

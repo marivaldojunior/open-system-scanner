@@ -11,11 +11,11 @@ plugins {
 }
 
 android {
-    namespace = "com.opensystemscanner.sample"
+    namespace = "com.scannervciarfid.sample"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.opensystemscanner.sample"
+        applicationId = "com.scannervciarfid.sample"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
@@ -50,7 +50,7 @@ kotlin {
 
 dependencies {
     // Consome o modulo nativo diretamente como projeto - sempre reflete o
-    // codigo-fonte atual de com.opensystemscanner.
+    // codigo-fonte atual de com.scannervciarfid.
     implementation(project(":"))
 
     implementation("androidx.core:core-ktx:1.13.1")

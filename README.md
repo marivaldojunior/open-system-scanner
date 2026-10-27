@@ -1,8 +1,8 @@
-# OpenSystemScanner
+# scanner-vc-ia-rfid
 
 **Biblioteca Universal de Captura de Dados.**
 
-O `OpenSystemScanner` unifica, sob uma única fachada nativa em Kotlin, duas formas completamente diferentes de capturar código de barras em um dispositivo Android corporativo:
+O `ScannerVcIaRfid` unifica, sob uma única fachada nativa em Kotlin, duas formas completamente diferentes de capturar código de barras em um dispositivo Android corporativo:
 
 - **Hardware físico** — coletores Zebra (perfis DataWedge) e Datalogic (Intent Wedge), além de qualquer leitor genérico baseado em Intent, todos escutados via `BroadcastReceiver`.
 - **Câmera** — leitura óptica via **CameraX** + **Google ML Kit Barcode Scanning**, quando o aparelho não tem um leitor dedicado.
@@ -55,7 +55,7 @@ flowchart TB
 
 ### 1. Camada Nativa (Kotlin)
 
-O módulo `com.opensystemscanner` é o único lugar do ecossistema que conhece hardware de verdade. Duas decisões de design sustentam tudo o que vem depois:
+O módulo `com.scannervciarfid` é o único lugar do ecossistema que conhece hardware de verdade. Duas decisões de design sustentam tudo o que vem depois:
 
 **SDKs proprietários como `compileOnly`.** Os SDKs da Zebra (EMDK) e da Datalogic são declarados assim no `build.gradle.kts` do núcleo:
 
@@ -70,7 +70,7 @@ Esses `.jar` já existem no firmware dos coletores físicos — declará-los com
 
 ### 2. Camada .NET MAUI (Android Binding Library)
 
-O binding traduz o `.aar` em tipos C# (`Com.Opensystemscanner.*`), e a camada `OpenSystemScanner.Maui` empacota isso em abstrações idiomáticas:
+O binding traduz o `.aar` em tipos C# (`Com.Scannervciarfid.*`), e a camada `ScannerVcIaRfid.Maui` empacota isso em abstrações idiomáticas:
 
 - **`ScannerListenerWrapper`** — herda `Java.Lang.Object` e implementa `IScannerListener` (gerado a partir de `ScannerListener`), traduzindo os callbacks JNI em `EventHandler<ScanResultEventArgs>`/`EventHandler<ScanErrorEventArgs>` usando POCOs puros. Nada acima dele precisa referenciar tipos Java.
 - **`IHardwareScannerService`** — interface cross-platform injetada via DI como `Singleton` (o leitor físico é um recurso global do aparelho, não algo por-página). A implementação Android (`HardwareScannerService`) é **idempotente** em `Initialize()` — proteção necessária porque `OnAppearing()` pode rodar várias vezes ao longo da vida da página, e registrar o `BroadcastReceiver` nativo duas vezes sem `Release()` no meio derruba o app.
@@ -78,7 +78,7 @@ O binding traduz o `.aar` em tipos C# (`Com.Opensystemscanner.*`), e a camada `O
 
 ### 3. Camada Flutter (Plugin)
 
-O plugin (`opensystemscanner_flutter`) expõe as duas mesmas vias através dos dois mecanismos de comunicação canônicos do Flutter:
+O plugin (`scanner_vc_ia_rfid_flutter`) expõe as duas mesmas vias através dos dois mecanismos de comunicação canônicos do Flutter:
 
 - **`EventChannel` para o hardware** — `HardwareScannerStreamHandler` inicializa e liga o `UniversalScanner` nativo em `onListen`, convertendo cada `ScanResult` em `Map<String, String>` e emitindo via `events.success(...)`. `onCancel` só chama `stop()` (não `release()`) — o leitor físico só é de fato liberado quando o plugin inteiro é desanexado do engine, não a cada vez que a tela Dart para de escutar o stream.
 - **`PlatformView` com instâncias isoladas por `viewId`** — cada `AndroidView` no lado Dart gera uma instância própria de `VisionScannerPlatformView`, com seu próprio `MethodChannel` nomeado `"<view_type>_<viewId>"`. Isso evita que múltiplas câmeras simultâneas na mesma árvore de widgets cruzem eventos entre si — cada preview só recebe os comandos (`startCamera`) e callbacks (`onScanSuccess`/`onScanError`) da sua própria instância nativa.
@@ -88,23 +88,23 @@ O plugin (`opensystemscanner_flutter`) expõe as duas mesmas vias através dos d
 ## Estrutura do repositório
 
 ```
-opensystemscanner/
+scanner-vc-ia-rfid/
 ├── build.gradle.kts                      # Módulo Android Library nativo
 ├── src/main/
 │   ├── AndroidManifest.xml               # Permissão + <uses-feature required="false">
-│   └── kotlin/com/opensystemscanner/
+│   └── kotlin/com/scannervciarfid/
 │       ├── DataCaptureFactory.kt          # Facade / ponto de entrada único
 │       ├── core/                          # Contratos: CaptureMode, ScanResult, ScannerListener, UniversalScanner
 │       ├── hardware/                      # Adapters de leitor físico
 │       └── vision/                        # VisionScannerView (CameraX + ML Kit)
 │
 ├── dotnet/                                # Ponte .NET MAUI
-│   ├── OpenSystemScanner.Android.Binding/   # Android Binding Library (consome o .aar)
-│   ├── OpenSystemScanner.Maui/              # Wrappers, services, controls, handlers (Strict Gating)
-│   └── OpenSystemScanner.Maui.Sample/       # App de exemplo
+│   ├── ScannerVcIaRfid.Android.Binding/     # Android Binding Library (consome o .aar)
+│   ├── ScannerVcIaRfid.Maui/                # Wrappers, services, controls, handlers (Strict Gating)
+│   └── ScannerVcIaRfid.Maui.Sample/         # App de exemplo
 │
 └── flutter/                               # Ponte Flutter
-    └── opensystemscanner_flutter/
+    └── scanner_vc_ia_rfid_flutter/
         ├── android/                         # Plugin nativo (EventChannel + PlatformView)
         ├── lib/                             # API Dart pública
         └── example/                         # App de exemplo
@@ -173,7 +173,7 @@ private static async Task<bool> EnsureCameraPermissionAsync()
 }
 ```
 
-Exemplo completo em [`dotnet/OpenSystemScanner.Maui.Sample`](dotnet/OpenSystemScanner.Maui.Sample).
+Exemplo completo em [`dotnet/ScannerVcIaRfid.Maui.Sample`](dotnet/ScannerVcIaRfid.Maui.Sample).
 
 ### Flutter
 
@@ -186,7 +186,7 @@ StreamSubscription<ScanResult>? _hardwareSubscription;
 void initState() {
   super.initState();
   _hardwareSubscription =
-      OpenSystemScannerHardware.instance.onBarcodeScanned.listen(_handleScanResult);
+      ScannerVcIaRfidHardware.instance.onBarcodeScanned.listen(_handleScanResult);
 }
 
 @override
@@ -218,7 +218,7 @@ SizedBox(
 
 `PlatformView` não tem tamanho intrínseco no Flutter: sem altura definida, o `AndroidView` renderiza com altura zero.
 
-Exemplo completo em [`flutter/opensystemscanner_flutter/example`](flutter/opensystemscanner_flutter/example).
+Exemplo completo em [`flutter/scanner_vc_ia_rfid_flutter/example`](flutter/scanner_vc_ia_rfid_flutter/example).
 
 ---
 
@@ -236,7 +236,7 @@ A câmera não envia um resultado a cada frame. Um valor igual ao anterior só �
 
 ## Configuração dos coletores físicos
 
-- **Zebra:** em `initialize()`, a biblioteca envia um `SET_CONFIG` ao DataWedge. Esse comando cria o perfil `OpenSystemScanner_<package>` (se ele não existir), associa o perfil ao app, liga a saída Intent (broadcast, action `com.opensystemscanner.zebra.SCAN`) e desliga a saída Keystroke. Se um MDM já associou o app a outro perfil, configure nesse perfil a mesma action, com entrega por broadcast.
+- **Zebra:** em `initialize()`, a biblioteca envia um `SET_CONFIG` ao DataWedge. Esse comando cria o perfil `ScannerVcIaRfid_<package>` (se ele não existir), associa o perfil ao app, liga a saída Intent (broadcast, action `com.scannervciarfid.zebra.SCAN`) e desliga a saída Keystroke. Se um MDM já associou o app a outro perfil, configure nesse perfil a mesma action, com entrega por broadcast.
 - **Datalogic:** ative o Intent Wedge nas configurações de Scanner do aparelho, com entrega por broadcast, action `com.datalogic.decodewedge.decode_action` e categoria `com.datalogic.decodewedge.decode_category`. Alguns modelos usam outros valores de fábrica.
 
 ## Requisitos
