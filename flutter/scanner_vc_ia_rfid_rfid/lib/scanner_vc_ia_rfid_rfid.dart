@@ -159,6 +159,61 @@ class ScannerVcIaRfidRfid {
   Future<void> startLocate(String epc) => _methodChannel.invokeMethod<void>('startLocate', {'epc': epc});
 
   Future<void> stopLocate() => _methodChannel.invokeMethod<void>('stopLocate');
+
+  static const EventChannel _batteryChannel = EventChannel('com.scannervciarfid/rfid/battery');
+
+  Stream<RfidBatteryStatus>? _onBatteryStatus;
+
+  /// Permissoes Android que o app precisa pedir em runtime (ex.: com o
+  /// pacote permission_handler) antes de escutar [onTagsRead]. Lista vazia
+  /// quando nao ha nenhuma. Hoje: BLUETOOTH_CONNECT no Android 12+, so com o
+  /// leitor do SDK Zebra API3 (sleds Bluetooth).
+  Future<List<String>> requiredBluetoothPermissions() async {
+    final permissions = await _methodChannel.invokeListMethod<String>('requiredBluetoothPermissions');
+    return permissions ?? const [];
+  }
+
+  /// Filtro Select do inventario: so as tags com [patternHex] no [bank], a
+  /// partir de [bitOffset], respondem. No banco EPC, o EPC comeca no bit 32:
+  /// use 32 para filtrar pelo prefixo do EPC.
+  Future<void> setInventoryFilter({
+    required RfidMemoryBank bank,
+    required int bitOffset,
+    required String patternHex,
+  }) {
+    return _methodChannel.invokeMethod<void>('setInventoryFilter', {
+      'memoryBank': bank.value,
+      'bitOffset': bitOffset,
+      'patternHex': patternHex,
+    });
+  }
+
+  Future<void> clearInventoryFilter() => _methodChannel.invokeMethod<void>('clearInventoryFilter');
+
+  /// Nivel de bateria do leitor (sleds RFD40/RFD90). O leitor avisa quando o
+  /// nivel muda; [requestBatteryStatus] pede o valor atual.
+  Stream<RfidBatteryStatus> get onBatteryStatus {
+    return _onBatteryStatus ??= _batteryChannel.receiveBroadcastStream().map(
+          (dynamic event) => RfidBatteryStatus.fromMap(event as Map<dynamic, dynamic>),
+        );
+  }
+
+  Future<void> requestBatteryStatus() => _methodChannel.invokeMethod<void>('requestBatteryStatus');
+}
+
+class RfidBatteryStatus {
+  const RfidBatteryStatus({required this.levelPercent, required this.charging});
+
+  factory RfidBatteryStatus.fromMap(Map<dynamic, dynamic> map) {
+    return RfidBatteryStatus(
+      levelPercent: map['levelPercent'] as int? ?? 0,
+      charging: map['charging'] as bool? ?? false,
+    );
+  }
+
+  /// 0 a 100.
+  final int levelPercent;
+  final bool charging;
 }
 
 /// Bancos de memoria EPC Gen2. Os valores seguem RfidMemoryBank (Kotlin).

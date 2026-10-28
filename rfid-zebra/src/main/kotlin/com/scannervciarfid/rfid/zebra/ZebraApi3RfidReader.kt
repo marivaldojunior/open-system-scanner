@@ -10,10 +10,12 @@ import com.scannervciarfid.rfid.RfidLockPrivilege
 import com.scannervciarfid.rfid.RfidMemoryBank
 import com.scannervciarfid.rfid.RfidOperationListener
 import com.scannervciarfid.rfid.RfidReader
+import com.scannervciarfid.rfid.RfidReaderStatusListener
 import com.scannervciarfid.rfid.RfidTagBuffer
 import com.scannervciarfid.rfid.RfidTagOperations
 import com.zebra.rfid.api3.ENUM_TRANSPORT
 import com.zebra.rfid.api3.ENUM_TRIGGER_MODE
+import com.zebra.rfid.api3.FILTER_ACTION
 import com.zebra.rfid.api3.HANDHELD_TRIGGER_EVENT_TYPE
 import com.zebra.rfid.api3.InvalidUsageException
 import com.zebra.rfid.api3.LOCK_DATA_FIELD
@@ -26,6 +28,7 @@ import com.zebra.rfid.api3.RfidEventsListener
 import com.zebra.rfid.api3.RfidReadEvents
 import com.zebra.rfid.api3.RfidStatusEvents
 import com.zebra.rfid.api3.SESSION
+import com.zebra.rfid.api3.STATE_UNAWARE_ACTION
 import com.zebra.rfid.api3.START_TRIGGER_TYPE
 import com.zebra.rfid.api3.STATUS_EVENT_TYPE
 import com.zebra.rfid.api3.STOP_TRIGGER_TYPE
@@ -58,6 +61,7 @@ class ZebraApi3RfidReader : RfidReader, RfidTagOperations {
 
     private var listener: RfidListener? = null
     private var locateListener: RfidLocateListener? = null
+    private var statusListener: RfidReaderStatusListener? = null
     private var readers: Readers? = null
 
     @Volatile
@@ -96,6 +100,12 @@ class ZebraApi3RfidReader : RfidReader, RfidTagOperations {
                         HANDHELD_TRIGGER_EVENT_TYPE.HANDHELD_TRIGGER_PRESSED -> startInventory()
                         HANDHELD_TRIGGER_EVENT_TYPE.HANDHELD_TRIGGER_RELEASED -> stopInventory()
                     }
+                }
+                STATUS_EVENT_TYPE.BATTERY_EVENT -> {
+                    val battery = data.BatteryData ?: return
+                    val level = battery.level
+                    val charging = battery.charging
+                    mainHandler.post { statusListener?.onBatteryStatus(level, charging) }
                 }
                 STATUS_EVENT_TYPE.DISCONNECTION_EVENT -> {
                     reader = null
@@ -142,6 +152,46 @@ class ZebraApi3RfidReader : RfidReader, RfidTagOperations {
     override fun setLocateListener(listener: RfidLocateListener?) {
         this.locateListener = listener
     }
+
+    override fun setReaderStatusListener(listener: RfidReaderStatusListener?) {
+        this.statusListener = listener
+    }
+
+    // A resposta chega como BATTERY_EVENT (eventStatusNotify).
+    override fun requestBatteryStatus() = runOnReader("Consultar a bateria") {
+        it.Config.getDeviceStatus(true, false, false)
+    }
+
+    override fun setInventoryFilter(
+        memoryBank: Int,
+        bitOffset: Int,
+        patternHex: String,
+        listener: RfidOperationListener
+    ) = runOperation("Aplicar o filtro de inventario", listener) { current ->
+        val pattern = parseBytes(patternHex)
+        val preFilters = current.Actions.PreFilters
+        preFilters.deleteAll()
+        forEachAntenna(current) { antenna ->
+            // Select sem estado: so as tags que casam com o padrao respondem.
+            val filter = preFilters.PreFilter().apply {
+                antennaID = antenna.toShort()
+                this.memoryBank = toMemoryBank(memoryBank)
+                setTagPattern(pattern)
+                tagPatternBitCount = pattern.size * 8
+                this.bitOffset = bitOffset
+                filterAction = FILTER_ACTION.FILTER_ACTION_STATE_UNAWARE
+                StateUnawareAction.stateUnawareAction = STATE_UNAWARE_ACTION.STATE_UNAWARE_ACTION_SELECT_NOT_UNSELECT
+            }
+            preFilters.add(filter)
+        }
+        ""
+    }
+
+    override fun clearInventoryFilter(listener: RfidOperationListener) =
+        runOperation("Remover o filtro de inventario", listener) { current ->
+            current.Actions.PreFilters.deleteAll()
+            ""
+        }
 
     override fun readMemory(
         epc: String,
@@ -301,6 +351,8 @@ class ZebraApi3RfidReader : RfidReader, RfidTagOperations {
         rfidReader.Events.setHandheldEvent(true)
         rfidReader.Events.setTagReadEvent(true)
         rfidReader.Events.setReaderDisconnectEvent(true)
+        // Sleds avisam quando o nivel de bateria muda.
+        rfidReader.Events.setBatteryEvent(true)
         // Sem os dados da tag no evento: getReadTags() busca em lote.
         rfidReader.Events.setAttachTagDataWithReadEvent(false)
         rfidReader.Config.setTriggerMode(ENUM_TRIGGER_MODE.RFID_MODE, true)
@@ -408,6 +460,17 @@ class ZebraApi3RfidReader : RfidReader, RfidTagOperations {
                 "Senha invalida: use ate 8 digitos hexadecimais."
             }
             return clean.toLong(16)
+        }
+
+        // Filtros aceitam qualquer numero de bytes (nao so palavras de 16 bits).
+        fun parseBytes(hex: String): ByteArray {
+            val clean = hex.replace(" ", "")
+            require(clean.isNotEmpty() && clean.length % 2 == 0) {
+                "Padrao invalido: use um numero par de digitos hexadecimais."
+            }
+            return ByteArray(clean.length / 2) { index ->
+                clean.substring(index * 2, index * 2 + 2).toInt(16).toByte()
+            }
         }
 
         fun parseHex(hex: String): ByteArray {

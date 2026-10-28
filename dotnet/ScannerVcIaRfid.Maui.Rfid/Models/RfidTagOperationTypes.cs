@@ -36,6 +36,14 @@ public enum RfidLockPrivilege
     PermaUnlock = 3
 }
 
+public sealed class RfidBatteryEventArgs(int levelPercent, bool charging) : EventArgs
+{
+    /// <summary>0 a 100.</summary>
+    public int LevelPercent { get; } = levelPercent;
+
+    public bool Charging { get; } = charging;
+}
+
 public sealed class RfidLocateEventArgs(string epc, int relativeDistance) : EventArgs
 {
     public string Epc { get; } = epc;

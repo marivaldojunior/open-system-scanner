@@ -444,6 +444,8 @@ O contrato `RfidTagOperations` (módulo `rfid`) cobre as operações que depende
 | Localizar por distância (0 a 100) | `StartLocate(epc)` / `StopLocate()` + evento `TagLocated` | `startLocate(epc)` / `stopLocate()` + stream `onTagLocated` |
 | Potência (dBm, nível mais próximo) | `SetTransmitPowerAsync(dbm)` | `setTransmitPower(dbm)` |
 | Sessão Gen2 (0 a 3) | `SetSessionAsync(session)` | `setSession(session)` |
+| Filtro Select do inventário | `SetInventoryFilterAsync(bank, bitOffset, patternHex)` / `ClearInventoryFilterAsync()` | `setInventoryFilter(bank:, bitOffset:, patternHex:)` / `clearInventoryFilter()` |
+| Bateria do leitor (sleds) | `RequestBatteryStatus()` + evento `BatteryStatusChanged` | `requestBatteryStatus()` + stream `onBatteryStatus` |
 
 Regras comuns:
 
@@ -451,6 +453,14 @@ Regras comuns:
 - Bancos: `Reserved`, `Epc`, `Tid`, `User`. Offset e tamanho em palavras de 16 bits; dados em hexadecimal (4 dígitos por palavra).
 - Senhas: 8 dígitos hexadecimais (`"00000000"` = sem senha).
 - A potência usa a tabela de níveis do leitor (`getTransmitPowerLevelValues`, em décimos de dBm) e devolve o valor aplicado.
+- Filtro Select: só as tags com o padrão respondem ao inventário. No banco EPC, o EPC começa no bit 32 (depois do CRC e do PC): para filtrar pelo prefixo do EPC, use `bitOffset` 32. O padrão aceita qualquer número de bytes.
+- O sled também avisa sozinho quando o nível de bateria muda.
+
+**Permissão Bluetooth (sleds pareados, Android 12+).** Peça `BLUETOOTH_CONNECT` em runtime **antes** de inicializar o leitor. Sem ela, o sled Bluetooth não aparece na busca. Leitores embutidos e por USB não precisam.
+
+- **Nativo:** `RfidPermissions.requiredRuntimePermissions()` lista o que pedir; `hasRuntimePermissions(context)` confere.
+- **MAUI:** `await _rfid.RequestBluetoothPermissionAsync()` antes de `Initialize()`. Pede só quando o leitor é o do SDK API3.
+- **Flutter:** `requiredBluetoothPermissions()` lista o que pedir; peça com um pacote como `permission_handler` antes de escutar `onTagsRead`.
 
 ```csharp
 var tid = await _rfid.ReadMemoryAsync(epc, RfidMemoryBank.Tid, wordOffset: 0, wordCount: 6);

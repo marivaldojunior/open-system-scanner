@@ -4,8 +4,10 @@ import android.content.Context
 import com.scannervciarfid.rfid.RfidListener
 import com.scannervciarfid.rfid.RfidLocateListener
 import com.scannervciarfid.rfid.RfidOperationListener
+import com.scannervciarfid.rfid.RfidPermissions
 import com.scannervciarfid.rfid.RfidReader
 import com.scannervciarfid.rfid.RfidReaderFactory
+import com.scannervciarfid.rfid.RfidReaderStatusListener
 import com.scannervciarfid.rfid.RfidTag
 import com.scannervciarfid.rfid.RfidTagOperations
 import io.flutter.embedding.engine.plugins.FlutterPlugin
@@ -33,6 +35,8 @@ class ScannerVcIaRfidRfidPlugin :
     private var initialized = false
     private var eventSink: EventChannel.EventSink? = null
     private var locateSink: EventChannel.EventSink? = null
+    private var batterySink: EventChannel.EventSink? = null
+    private var batteryChannel: EventChannel? = null
     private var eventChannel: EventChannel? = null
     private var locateChannel: EventChannel? = null
     private var methodChannel: MethodChannel? = null
@@ -55,6 +59,22 @@ class ScannerVcIaRfidRfidPlugin :
         }
     }
 
+    private val statusListener = object : RfidReaderStatusListener {
+        override fun onBatteryStatus(levelPercent: Int, charging: Boolean) {
+            batterySink?.success(mapOf("levelPercent" to levelPercent, "charging" to charging))
+        }
+    }
+
+    private val batteryStreamHandler = object : EventChannel.StreamHandler {
+        override fun onListen(arguments: Any?, events: EventChannel.EventSink) {
+            batterySink = events
+        }
+
+        override fun onCancel(arguments: Any?) {
+            batterySink = null
+        }
+    }
+
     // Stream separado para a localizacao: a tela de busca escuta so ele.
     private val locateStreamHandler = object : EventChannel.StreamHandler {
         override fun onListen(arguments: Any?, events: EventChannel.EventSink) {
@@ -74,6 +94,9 @@ class ScannerVcIaRfidRfidPlugin :
         locateChannel = EventChannel(binding.binaryMessenger, LOCATE_CHANNEL).apply {
             setStreamHandler(locateStreamHandler)
         }
+        batteryChannel = EventChannel(binding.binaryMessenger, BATTERY_CHANNEL).apply {
+            setStreamHandler(batteryStreamHandler)
+        }
         methodChannel = MethodChannel(binding.binaryMessenger, METHOD_CHANNEL).apply {
             setMethodCallHandler(this@ScannerVcIaRfidRfidPlugin)
         }
@@ -83,6 +106,7 @@ class ScannerVcIaRfidRfidPlugin :
         if (initialized) {
             reader?.setRfidListener(null)
             operations?.setLocateListener(null)
+            operations?.setReaderStatusListener(null)
             reader?.release()
             initialized = false
         }
@@ -90,6 +114,8 @@ class ScannerVcIaRfidRfidPlugin :
         eventChannel = null
         locateChannel?.setStreamHandler(null)
         locateChannel = null
+        batteryChannel?.setStreamHandler(null)
+        batteryChannel = null
         methodChannel?.setMethodCallHandler(null)
         methodChannel = null
         applicationContext = null
@@ -99,6 +125,10 @@ class ScannerVcIaRfidRfidPlugin :
         when (call.method) {
             "isAvailable" -> result.success(reader != null)
             "supportsTagOperations" -> result.success(operations != null)
+            // So o leitor do SDK API3 usa Bluetooth (sleds pareados).
+            "requiredBluetoothPermissions" -> result.success(
+                if (operations == null) emptyList() else RfidPermissions.requiredRuntimePermissions().toList()
+            )
             "startInventory" -> withReadyReader(result) {
                 it.startInventory()
                 result.success(null)
@@ -144,6 +174,21 @@ class ScannerVcIaRfidRfidPlugin :
             }
             "setSession" -> withOperations(result) {
                 it.setSession(call.argument<Int>("session") ?: 0, result.asOperationListener())
+            }
+            "setInventoryFilter" -> withOperations(result) {
+                it.setInventoryFilter(
+                    call.argument<Int>("memoryBank") ?: 0,
+                    call.argument<Int>("bitOffset") ?: 0,
+                    call.requireString("patternHex"),
+                    result.asOperationListener()
+                )
+            }
+            "clearInventoryFilter" -> withOperations(result) {
+                it.clearInventoryFilter(result.asOperationListener())
+            }
+            "requestBatteryStatus" -> withOperations(result) {
+                it.requestBatteryStatus()
+                result.success(null)
             }
             "startLocate" -> withOperations(result) {
                 it.startLocate(call.requireString("epc"))
@@ -193,6 +238,7 @@ class ScannerVcIaRfidRfidPlugin :
         if (!initialized) {
             currentReader.initialize(context)
             operations?.setLocateListener(locateListener)
+            operations?.setReaderStatusListener(statusListener)
             initialized = true
         }
         currentReader.setRfidListener(rfidListener)
@@ -228,6 +274,7 @@ class ScannerVcIaRfidRfidPlugin :
     private companion object {
         const val EVENT_CHANNEL = "com.scannervciarfid/rfid/tags"
         const val LOCATE_CHANNEL = "com.scannervciarfid/rfid/locate"
+        const val BATTERY_CHANNEL = "com.scannervciarfid/rfid/battery"
         const val METHOD_CHANNEL = "com.scannervciarfid/rfid/methods"
     }
 }

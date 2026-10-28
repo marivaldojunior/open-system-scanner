@@ -62,6 +62,8 @@ public partial class MainPage : ContentPage
 
         if (_rfid.IsAvailable)
         {
+            // Sleds Bluetooth (SDK Zebra API3) precisam da permissao antes do Initialize.
+            await _rfid.RequestBluetoothPermissionAsync();
             _rfid.Initialize();
             _rfid.TagsRead += OnRfidTagsRead;
             _rfid.RfidError += OnRfidError;

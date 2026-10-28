@@ -70,12 +70,36 @@ interface RfidTagOperations {
 
     /** Sessao Gen2 de 0 a 3 (S0 a S3). */
     fun setSession(session: Int, listener: RfidOperationListener)
+
+    /**
+     * Filtro Select do inventario: so as tags com [patternHex] no banco
+     * [memoryBank], a partir de [bitOffset], respondem. No banco EPC, o EPC
+     * comeca no bit 32 (depois do CRC e do PC): use bitOffset 32 para
+     * filtrar pelo prefixo do EPC. Substitui o filtro anterior.
+     */
+    fun setInventoryFilter(memoryBank: Int, bitOffset: Int, patternHex: String, listener: RfidOperationListener)
+
+    fun clearInventoryFilter(listener: RfidOperationListener)
+
+    fun setReaderStatusListener(listener: RfidReaderStatusListener?)
+
+    /**
+     * Pede o nivel de bateria do leitor (sleds RFD40/RFD90). A resposta chega
+     * no RfidReaderStatusListener; o leitor tambem avisa sozinho quando o
+     * nivel muda.
+     */
+    fun requestBatteryStatus()
 }
 
 /** Resultado de uma operacao. [result] e vazio quando a operacao nao retorna dados. */
 interface RfidOperationListener {
     fun onSuccess(result: String)
     fun onError(error: String)
+}
+
+interface RfidReaderStatusListener {
+    /** [levelPercent]: 0 a 100. */
+    fun onBatteryStatus(levelPercent: Int, charging: Boolean)
 }
 
 interface RfidLocateListener {

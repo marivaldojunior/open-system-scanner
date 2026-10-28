@@ -21,6 +21,12 @@ public interface IRfidReaderService
     /// </summary>
     event EventHandler<RfidLocateEventArgs>? TagLocated;
 
+    /// <summary>
+    /// Nivel de bateria do leitor (ver <see cref="RequestBatteryStatus"/>).
+    /// Disparado na main thread.
+    /// </summary>
+    event EventHandler<RfidBatteryEventArgs>? BatteryStatusChanged;
+
     /// <summary>O aparelho tem um leitor RFID suportado.</summary>
     bool IsAvailable { get; }
 
@@ -30,6 +36,14 @@ public interface IRfidReaderService
     /// API3; o leitor DataWedge so faz inventario.
     /// </summary>
     bool SupportsTagOperations { get; }
+
+    /// <summary>
+    /// Pede a permissao Bluetooth de runtime (Android 12+), exigida por
+    /// sleds Bluetooth (RFD40/RFD90 pareados). Chame antes de
+    /// <see cref="Initialize"/>: sem ela, o leitor Bluetooth nao aparece.
+    /// Retorna true quando a permissao esta concedida (ou nao e necessaria).
+    /// </summary>
+    Task<bool> RequestBluetoothPermissionAsync();
 
     /// <summary>Idempotente - seguro chamar a cada OnAppearing.</summary>
     void Initialize();
@@ -73,4 +87,16 @@ public interface IRfidReaderService
     void StartLocate(string epc);
 
     void StopLocate();
+
+    /// <summary>
+    /// Filtro Select do inventario: so as tags com <paramref name="patternHex"/>
+    /// no banco, a partir de <paramref name="bitOffset"/>, respondem. No banco
+    /// EPC, o EPC comeca no bit 32: use 32 para filtrar pelo prefixo do EPC.
+    /// </summary>
+    Task SetInventoryFilterAsync(RfidMemoryBank bank, int bitOffset, string patternHex);
+
+    Task ClearInventoryFilterAsync();
+
+    /// <summary>Pede o nivel de bateria. A resposta chega em <see cref="BatteryStatusChanged"/>.</summary>
+    void RequestBatteryStatus();
 }
