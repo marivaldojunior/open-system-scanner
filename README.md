@@ -70,7 +70,7 @@ flowchart TB
 | `vision-ocr` | `OcrTextEngine` (id `"ocr"`) | `vision`, ML Kit Text Recognition |
 | `code-scanner` | `GoogleCodeScanner` (leitura única, sem permissão de câmera) | `core`, Google Play Services |
 | `document-scanner` | `GoogleDocumentScanner` (recorte, perspectiva, JPEG e PDF) | Google Play Services |
-| `nfc` | `NfcTagReader` (Reader Mode: UID, tecnologias, registros NDEF) | — (só `android.nfc`) |
+| `nfc` | `NfcTagReader` (Reader Mode: UID, tecnologias, leitura e gravação NDEF) | — (só `android.nfc`) |
 | `rfid` | `RfidReader`, `RfidTagBuffer` (lotes), `ZebraDataWedgeRfidReader`, `RfidReaderFactory` | AndroidX Core |
 | `rfid-zebra` (opcional) | `ZebraApi3RfidReader` (SDK Zebra RFID API3) — **minSdk 29**, só entra no build com o SDK em `libs/` | `rfid`, SDK Zebra (`compileOnly`), LocalBroadcastManager |
 | `ai-language` | `LanguageAiClient` (idioma, tradução, extração de entidades) — **minSdk 26** | ML Kit Language ID, Translate, Entity Extraction |
@@ -378,6 +378,24 @@ _subscription = ScannerVcIaRfidNfc.instance.onTagRead.listen((tag) {
 // dispose(): cancelar a subscription desliga o Reader Mode.
 _subscription?.cancel();
 ```
+
+#### Gravação NDEF
+
+A gravação é "armada": a próxima tag aproximada recebe a mensagem, em vez de gerar o evento de leitura. Depois disso, a gravação é desarmada. O Reader Mode precisa estar ligado (`Start()` no MAUI, uma subscription de `onTagRead` no Flutter).
+
+- Tipos de registro: Text (UTF-8, com código de idioma) e URI.
+- Tag vazia com `NdefFormatable`: a biblioteca formata e grava numa operação só.
+- Erros: tag somente leitura, mensagem maior que a capacidade da tag, tag sem suporte a NDEF.
+
+```csharp
+var tag = await _nfc.WriteTextAsync("Lote 123");   // _nfc.CancelWrite() desarma
+```
+
+```dart
+final tag = await ScannerVcIaRfidNfc.instance.writeUri('https://exemplo.com/lote/123');
+```
+
+A emulação de cartão (HCE) não está incluída: ela exige um `HostApduService` declarado no manifesto do app, com os AIDs do cartão emulado, e roda sem interface. Ela entra quando houver um caso de uso concreto.
 
 Exemplos em [`dotnet/ScannerVcIaRfid.Maui.Sample`](dotnet/ScannerVcIaRfid.Maui.Sample) e [`flutter/scanner_vc_ia_rfid_nfc/example`](flutter/scanner_vc_ia_rfid_nfc/example).
 

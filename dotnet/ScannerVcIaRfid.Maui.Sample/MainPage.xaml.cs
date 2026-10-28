@@ -251,6 +251,25 @@ public partial class MainPage : ContentPage
         });
     }
 
+    // Arma a gravacao: a proxima tag aproximada recebe o texto.
+    private async void OnNfcWriteClicked(object? sender, EventArgs e)
+    {
+        LastNfcLabel.Text = "Aproxime a tag para gravar...";
+        try
+        {
+            var tag = await _nfc.WriteTextAsync($"ScannerVcIaRfid {DateTime.Now:HH:mm:ss}");
+            LastNfcLabel.Text = $"Gravado em {tag.Uid}: {tag.NdefRecords.FirstOrDefault()?.Text}";
+        }
+        catch (TaskCanceledException)
+        {
+            LastNfcLabel.Text = "Gravação cancelada.";
+        }
+        catch (InvalidOperationException ex)
+        {
+            LastNfcLabel.Text = ex.Message;
+        }
+    }
+
     private void OnNfcError(object? sender, NfcErrorEventArgs e)
     {
         MainThread.BeginInvokeOnMainThread(() => LastNfcLabel.Text = e.Message);

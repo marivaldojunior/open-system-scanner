@@ -7,6 +7,7 @@ import android.os.Looper
 import com.scannervciarfid.nfc.NfcTagData
 import com.scannervciarfid.nfc.NfcTagListener
 import com.scannervciarfid.nfc.NfcTagReader
+import com.scannervciarfid.nfc.NfcWriteListener
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -33,6 +34,33 @@ class ScannerVcIaRfidNfcPlugin :
     private var eventSink: EventChannel.EventSink? = null
     private var eventChannel: EventChannel? = null
     private var methodChannel: MethodChannel? = null
+    private var pendingWrite: PendingWriteResult? = null
+
+    /**
+     * Responde uma unica vez ao Result de uma gravacao. cancelWrite responde
+     * CANCELED antes do nativo, e o onWriteError("cancelada") que vem depois
+     * e ignorado.
+     */
+    private inner class PendingWriteResult(private val result: MethodChannel.Result) : NfcWriteListener {
+        private var answered = false
+
+        fun cancel() = answer { result.error("CANCELED", "Gravacao cancelada.", null) }
+
+        override fun onWriteSuccess(tag: NfcTagData) {
+            mainHandler.post { answer { result.success(tag.toFlutterMap()) } }
+        }
+
+        override fun onWriteError(error: String) {
+            mainHandler.post { answer { result.error("WRITE_ERROR", error, null) } }
+        }
+
+        private fun answer(reply: () -> Unit) {
+            if (!answered) {
+                answered = true
+                reply()
+            }
+        }
+    }
 
     // O NfcTagReader chama numa thread do binder; o EventSink so aceita a main thread.
     private val tagListener = object : NfcTagListener {
@@ -74,8 +102,32 @@ class ScannerVcIaRfidNfcPlugin :
         when (call.method) {
             "isSupported" -> result.success(NfcTagReader.isSupported(context))
             "isEnabled" -> result.success(NfcTagReader.isEnabled(context))
+            "writeText" -> armWrite(result) {
+                reader.writeTextOnNextTag(
+                    call.argument<String>("text").orEmpty(),
+                    call.argument<String>("languageCode") ?: "pt",
+                    it
+                )
+            }
+            "writeUri" -> armWrite(result) {
+                reader.writeUriOnNextTag(call.argument<String>("uri").orEmpty(), it)
+            }
+            "cancelWrite" -> {
+                pendingWrite?.cancel()
+                pendingWrite = null
+                reader.cancelPendingWrite()
+                result.success(null)
+            }
             else -> result.notImplemented()
         }
+    }
+
+    // Uma gravacao por vez: a anterior responde CANCELED.
+    private fun armWrite(result: MethodChannel.Result, arm: (NfcWriteListener) -> Unit) {
+        pendingWrite?.cancel()
+        val write = PendingWriteResult(result)
+        pendingWrite = write
+        arm(write)
     }
 
     override fun onListen(arguments: Any?, events: EventChannel.EventSink) {

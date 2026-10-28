@@ -63,6 +63,20 @@ class _NfcExampleScreenState extends State<NfcExampleScreen> {
     );
   }
 
+  // Arma a gravacao: a proxima tag aproximada recebe o texto.
+  Future<void> _writeText() async {
+    setState(() => _status = 'Aproxime a tag para gravar...');
+    try {
+      final tag = await ScannerVcIaRfidNfc.instance.writeText('ScannerVcIaRfid ${DateTime.now()}');
+      setState(() {
+        _lastTag = tag;
+        _status = 'Tag gravada.';
+      });
+    } on PlatformException catch (error) {
+      setState(() => _status = error.code == 'CANCELED' ? 'Gravação cancelada.' : error.message ?? 'Erro.');
+    }
+  }
+
   @override
   void dispose() {
     // Cancelar a subscription desliga o Reader Mode.
@@ -82,6 +96,8 @@ class _NfcExampleScreenState extends State<NfcExampleScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(_status),
+            const SizedBox(height: 8),
+            OutlinedButton(onPressed: _writeText, child: const Text('Gravar texto na próxima tag')),
             const SizedBox(height: 16),
             if (tag != null) ...[
               Text('UID: ${tag.uid}', style: Theme.of(context).textTheme.titleMedium),

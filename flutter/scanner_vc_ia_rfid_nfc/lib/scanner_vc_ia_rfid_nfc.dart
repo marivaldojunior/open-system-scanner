@@ -106,4 +106,25 @@ class ScannerVcIaRfidNfc {
 
   /// O NFC esta ligado nas configuracoes do aparelho.
   Future<bool> isEnabled() async => await _methodChannel.invokeMethod<bool>('isEnabled') ?? false;
+
+  /// Grava um registro Text na proxima tag aproximada. Exige uma subscription
+  /// ativa de [onTagRead] (o Reader Mode precisa estar ligado). Retorna a tag
+  /// gravada. Lanca [PlatformException] com code 'CANCELED' apos
+  /// [cancelWrite] e 'WRITE_ERROR' se a gravacao falhar.
+  Future<NfcTag> writeText(String text, {String languageCode = 'pt'}) async {
+    final map = await _methodChannel.invokeMapMethod<dynamic, dynamic>('writeText', {
+      'text': text,
+      'languageCode': languageCode,
+    });
+    return NfcTag.fromMap(map!);
+  }
+
+  /// Grava um registro URI (ex.: 'https://...') na proxima tag aproximada.
+  Future<NfcTag> writeUri(String uri) async {
+    final map = await _methodChannel.invokeMapMethod<dynamic, dynamic>('writeUri', {'uri': uri});
+    return NfcTag.fromMap(map!);
+  }
+
+  /// Desarma a gravacao pendente. A proxima tag volta para [onTagRead].
+  Future<void> cancelWrite() => _methodChannel.invokeMethod<void>('cancelWrite');
 }

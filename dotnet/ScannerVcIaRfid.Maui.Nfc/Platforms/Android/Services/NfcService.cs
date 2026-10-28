@@ -12,6 +12,7 @@ public sealed class NfcService : INfcService, IDisposable
 {
     private readonly NfcTagReader _reader = new();
     private readonly NfcTagListener _listener;
+    private NfcWriteListener? _pendingWrite;
     private bool _disposed;
 
     public event EventHandler<NfcTagEventArgs>? TagRead;
@@ -42,6 +43,31 @@ public sealed class NfcService : INfcService, IDisposable
 
     public void Stop() => _reader.Stop();
 
+    public Task<NfcTag> WriteTextAsync(string text, string languageCode = "pt") =>
+        ArmWrite(listener => _reader.WriteTextOnNextTag(text, languageCode, listener));
+
+    public Task<NfcTag> WriteUriAsync(string uri) =>
+        ArmWrite(listener => _reader.WriteUriOnNextTag(uri, listener));
+
+    public void CancelWrite()
+    {
+        // Cancela o Task antes do nativo: o onWriteError("cancelada") que o
+        // nativo envia depois nao muda mais o resultado.
+        _pendingWrite?.Cancel();
+        _pendingWrite = null;
+        _reader.CancelPendingWrite();
+    }
+
+    private Task<NfcTag> ArmWrite(Action<INfcWriteListener> arm)
+    {
+        // Uma gravacao por vez: o nativo tambem cancela a anterior.
+        _pendingWrite?.Cancel();
+        var listener = new NfcWriteListener();
+        _pendingWrite = listener;
+        arm(listener);
+        return listener.Task;
+    }
+
     public void Dispose()
     {
         if (_disposed)
@@ -69,6 +95,34 @@ public sealed class NfcService : INfcService, IDisposable
                 .Split(',', StringSplitOptions.RemoveEmptyEntries),
             NdefRecords = records
         };
+    }
+
+    /// <summary>
+    /// Traduz o resultado JNI de uma unica gravacao em um Task.
+    /// </summary>
+    private sealed class NfcWriteListener : Java.Lang.Object, INfcWriteListener
+    {
+        private readonly TaskCompletionSource<NfcTag> _completion =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task<NfcTag> Task => _completion.Task;
+
+        public void Cancel() => _completion.TrySetCanceled();
+
+        public void OnWriteSuccess(NfcTagData tag)
+        {
+            try
+            {
+                _completion.TrySetResult(Map(tag));
+            }
+            catch (JsonException ex)
+            {
+                _completion.TrySetException(new InvalidOperationException($"NDEF invalido: {ex.Message}"));
+            }
+        }
+
+        public void OnWriteError(string error) =>
+            _completion.TrySetException(new InvalidOperationException(error));
     }
 
     /// <summary>
