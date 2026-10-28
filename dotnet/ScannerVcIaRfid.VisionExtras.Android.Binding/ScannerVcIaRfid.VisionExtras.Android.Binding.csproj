@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
+    <AndroidClassParser>class-parse</AndroidClassParser>
+    <AndroidCodegenTarget>XAJavaInterop1</AndroidCodegenTarget>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>ScannerVcIaRfid.VisionExtras.Android.Binding</RootNamespace>
+    <AssemblyName>ScannerVcIaRfid.VisionExtras.Android.Binding</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Modulos nativos vision-objects, vision-labels e vision-faces. Gere com
+         `./gradlew exportMauiAars` na raiz do repositorio - ver Jars/README.md. -->
+    <AndroidLibrary Include="Jars\*.aar" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Os motores implementam VisionEngineAnalyzer e usam o GraphicOverlay
+         do modulo vision, que ja esta na binding principal. -->
+    <ProjectReference Include="..\ScannerVcIaRfid.Android.Binding\ScannerVcIaRfid.Android.Binding.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Versoes alinhadas com gradle/libs.versions.toml (prefixo "1" do NuGet). -->
+    <PackageReference Include="Xamarin.Google.MLKit.ObjectDetection" Version="117.0.2.*" />
+    <PackageReference Include="Xamarin.Google.MLKit.ImageLabeling" Version="117.0.9.*" />
+    <PackageReference Include="Xamarin.Google.MLKit.FaceDetection" Version="116.1.7.*" />
+  </ItemGroup>
+
+</Project>

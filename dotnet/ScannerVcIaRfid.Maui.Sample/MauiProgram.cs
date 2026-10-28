@@ -4,6 +4,7 @@ using ScannerVcIaRfid.Maui.Controls;
 using ScannerVcIaRfid.Maui.Nfc.Services;
 using ScannerVcIaRfid.Maui.Rfid.Services;
 using ScannerVcIaRfid.Maui.Services;
+using ScannerVcIaRfid.Maui.VisionExtras;
 
 #if ANDROID
 using ScannerVcIaRfid.Maui.Ai.Platforms.Android.Services;
@@ -22,6 +23,9 @@ public static class MauiProgram
         var builder = MauiApp.CreateBuilder();
 
         builder.UseMauiApp<App>();
+
+        // Motores extras (objetos, rotulos, rostos) para o VisionScanner.
+        builder.UseVisionExtras();
 
         builder.ConfigureMauiHandlers(handlers =>
         {

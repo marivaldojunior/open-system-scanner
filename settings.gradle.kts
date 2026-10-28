@@ -29,6 +29,9 @@ rootProject.name = "scanner-vc-ia-rfid"
 //   nfc              -> leitura de tags NFC/HF (Reader Mode do Android)
 //   rfid             -> contrato de leitores RFID UHF + leitor via DataWedge (Zebra)
 //   ai-language      -> IA de linguagem on-device (idioma, traducao, entidades - ML Kit)
+//   vision-objects   -> motor de deteccao e rastreio de objetos (ML Kit Object Detection)
+//   vision-labels    -> motor de rotulagem de imagem (ML Kit Image Labeling)
+//   vision-faces     -> motor de deteccao de rostos (ML Kit Face Detection)
 include(":core")
 include(":barcode-hardware")
 include(":vision")
@@ -38,6 +41,9 @@ include(":code-scanner")
 include(":nfc")
 include(":rfid")
 include(":ai-language")
+include(":vision-objects")
+include(":vision-labels")
+include(":vision-faces")
 
 // ":sample" e um app Android puro que consome os modulos via project(...) -
 // mesmo build Gradle, sempre em sincronia com o codigo-fonte atual.

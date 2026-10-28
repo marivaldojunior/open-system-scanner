@@ -25,6 +25,10 @@ import com.scannervciarfid.rfid.RfidTag
 import com.scannervciarfid.sample.databinding.ActivityMainBinding
 import com.scannervciarfid.vision.VisionScannerView
 import com.scannervciarfid.vision.barcode.BarcodeEngine
+import com.scannervciarfid.vision.VisionEngineAnalyzer
+import com.scannervciarfid.vision.faces.FaceDetectionEngine
+import com.scannervciarfid.vision.labels.ImageLabelingEngine
+import com.scannervciarfid.vision.objects.ObjectDetectionEngine
 import com.scannervciarfid.vision.ocr.OcrTextEngine
 import org.json.JSONArray
 import org.json.JSONObject
@@ -42,7 +46,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var hardwareScanner: UniversalScanner
     private var cameraScannerView: VisionScannerView? = null
-    private var ocrEnabled = false
+    private var engineIndex = 0
     private val nfcTagReader = NfcTagReader()
 
     // null em aparelhos sem leitor RFID suportado.
@@ -208,14 +212,14 @@ class MainActivity : ComponentActivity() {
     }
 
     // App nativo instancia o motor direto. As pontes MAUI/Flutter usam o
-    // VisionEngineRegistry, porque recebem o motor como texto ("barcode", "ocr").
-    private fun createEngine() = if (ocrEnabled) OcrTextEngine() else BarcodeEngine()
+    // VisionEngineRegistry, porque recebem o motor como texto ("barcode", "ocr"...).
+    private fun createEngine(): VisionEngineAnalyzer = ENGINES[engineIndex].second()
 
     private fun onSwitchEngineClicked() {
-        ocrEnabled = !ocrEnabled
+        engineIndex = (engineIndex + 1) % ENGINES.size
         // Com a camera ligada, o motor novo passa a analisar os proximos frames.
         cameraScannerView?.setVisionEngine(createEngine())
-        binding.switchEngineButton.text = if (ocrEnabled) "Motor: OCR" else "Motor: Código de barras"
+        binding.switchEngineButton.text = "Motor: ${ENGINES[engineIndex].first}"
     }
 
     // Leitura unica pela tela do Google Play Services - nao usa a
@@ -287,5 +291,15 @@ class MainActivity : ComponentActivity() {
     private fun hideCamera() {
         binding.cameraContainer.removeAllViews()
         binding.activateCameraButton.text = "Ativar Câmera"
+    }
+
+    private companion object {
+        val ENGINES: List<Pair<String, () -> VisionEngineAnalyzer>> = listOf(
+            "Código de barras" to { BarcodeEngine() },
+            "OCR" to { OcrTextEngine() },
+            "Objetos" to { ObjectDetectionEngine() },
+            "Rótulos" to { ImageLabelingEngine() },
+            "Rostos" to { FaceDetectionEngine() }
+        )
     }
 }

@@ -56,6 +56,9 @@ dependencies {
     implementation(project(":nfc"))
     implementation(project(":rfid"))
     implementation(project(":ai-language"))
+    implementation(project(":vision-objects"))
+    implementation(project(":vision-labels"))
+    implementation(project(":vision-faces"))
 
     implementation(libs.androidx.core.ktx)
     // Necessario para ComponentActivity.registerForActivityResult(...)

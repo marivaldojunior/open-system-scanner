@@ -8,6 +8,7 @@ using ScannerVcIaRfid.Maui.Nfc.Services;
 using ScannerVcIaRfid.Maui.Rfid.Models;
 using ScannerVcIaRfid.Maui.Rfid.Services;
 using ScannerVcIaRfid.Maui.Services;
+using ScannerVcIaRfid.Maui.VisionExtras;
 
 namespace ScannerVcIaRfid.Maui.Sample;
 
@@ -328,12 +329,24 @@ public partial class MainPage : ContentPage
         }
     }
 
+    // Motores do pacote principal + do ScannerVcIaRfid.Maui.VisionExtras.
+    private static readonly (string Id, string Name)[] Engines =
+    [
+        (VisionEngines.Barcode, "Código de barras"),
+        (VisionEngines.Ocr, "OCR"),
+        (VisionExtraEngines.Objects, "Objetos"),
+        (VisionExtraEngines.Labels, "Rótulos"),
+        (VisionExtraEngines.Faces, "Rostos")
+    ];
+
+    private int _engineIndex;
+
     private void OnSwitchEngineClicked(object? sender, EventArgs e)
     {
         // Engine e uma BindableProperty: o handler troca o motor nativo na
         // hora, mesmo com a camera ligada.
-        var useOcr = CameraScannerView.Engine != VisionEngines.Ocr;
-        CameraScannerView.Engine = useOcr ? VisionEngines.Ocr : VisionEngines.Barcode;
-        SwitchEngineButton.Text = useOcr ? "Motor: OCR" : "Motor: Código de barras";
+        _engineIndex = (_engineIndex + 1) % Engines.Length;
+        CameraScannerView.Engine = Engines[_engineIndex].Id;
+        SwitchEngineButton.Text = $"Motor: {Engines[_engineIndex].Name}";
     }
 }

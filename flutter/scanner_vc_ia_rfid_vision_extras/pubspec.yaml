@@ -1,0 +1,26 @@
+name: scanner_vc_ia_rfid_vision_extras
+description: >
+  Complemento do plugin scanner_vc_ia_rfid_flutter - registra motores extras
+  de visao (objetos, rotulos de imagem, rostos) para o VisionScannerWidget.
+version: 0.1.0
+homepage:
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+  flutter: '>=3.19.0'
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.scannervciarfid.flutter.visionextras
+        pluginClass: ScannerVcIaRfidVisionExtrasPlugin
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0

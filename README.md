@@ -72,6 +72,9 @@ flowchart TB
 | `nfc` | `NfcTagReader` (Reader Mode: UID, tecnologias, registros NDEF) | — (só `android.nfc`) |
 | `rfid` | `RfidReader`, `RfidTagBuffer` (lotes), `ZebraDataWedgeRfidReader`, `RfidReaderFactory` | AndroidX Core |
 | `ai-language` | `LanguageAiClient` (idioma, tradução, extração de entidades) — **minSdk 26** | ML Kit Language ID, Translate, Entity Extraction |
+| `vision-objects` | `ObjectDetectionEngine` (id `"objects"`) | `vision`, ML Kit Object Detection |
+| `vision-labels` | `ImageLabelingEngine` (id `"labels"`) | `vision`, ML Kit Image Labeling |
+| `vision-faces` | `FaceDetectionEngine` (id `"faces"`) | `vision`, ML Kit Face Detection |
 
 Cada recurso novo (NFC, RFID UHF, IA) entra como um módulo próprio, que depende de `core`. O módulo `vision` não conhece os motores: cada motor se registra no `VisionEngineRegistry` (ex.: `BarcodeEngine.register()`), e as pontes escolhem o motor pelo id.
 
@@ -126,6 +129,9 @@ scanner-vc-ia-rfid/
 ├── nfc/                                   # NfcTagReader (Reader Mode)
 ├── rfid/                                  # Contrato RFID UHF + leitor via DataWedge
 ├── ai-language/                           # IA de linguagem on-device (ML Kit)
+├── vision-objects/                        # ObjectDetectionEngine
+├── vision-labels/                         # ImageLabelingEngine
+├── vision-faces/                          # FaceDetectionEngine
 ├── sample/                                # App Android nativo de exemplo
 │
 ├── dotnet/                                # Ponte .NET MAUI
@@ -174,6 +180,7 @@ Cada domínio tem o próprio pacote MAUI (com a própria binding) e o próprio p
 | NFC | `nfc` | `ScannerVcIaRfid.Maui.Nfc` | `scanner_vc_ia_rfid_nfc` |
 | RFID UHF | `rfid` | `ScannerVcIaRfid.Maui.Rfid` | `scanner_vc_ia_rfid_rfid` |
 | IA de linguagem | `ai-language` | `ScannerVcIaRfid.Maui.Ai` | `scanner_vc_ia_rfid_ai` |
+| Motores extras de visão (complemento) | `vision-objects`, `vision-labels`, `vision-faces` | `ScannerVcIaRfid.Maui.VisionExtras` | `scanner_vc_ia_rfid_vision_extras` |
 
 ## Guia rápido de integração
 
@@ -421,6 +428,38 @@ O binding .NET do Entity Extraction não tem pacote NuGet: a binding `ScannerVcI
 
 Exemplos em [`dotnet/ScannerVcIaRfid.Maui.Sample`](dotnet/ScannerVcIaRfid.Maui.Sample) e [`flutter/scanner_vc_ia_rfid_ai/example`](flutter/scanner_vc_ia_rfid_ai/example).
 
+### Motores extras de visão
+
+Três motores novos para o mesmo controle de câmera (`VisionScanner` / `VisionScannerWidget`). O pacote complementar só registra os motores no `VisionEngineRegistry`; o controle do pacote principal passa a aceitar os ids novos sem nenhuma mudança.
+
+| Id | `format` | `value` (JSON) |
+|---|---|---|
+| `objects` | `VISION_OBJECTS` | `{"objects": [{trackingId, boundingBox, labels: [{text, confidence}]}]}` — até 5 objetos, categorias grosseiras do modelo padrão |
+| `labels` | `VISION_LABELS` | `{"labels": [{text, confidence, index}]}` — rótulos da cena em inglês, confiança ≥ 70% |
+| `faces` | `VISION_FACES` | `{"faces": [{trackingId, boundingBox, smilingProbability, leftEyeOpenProbability, rightEyeOpenProbability, headEulerAngleY, headEulerAngleZ}]}` — detecta, não reconhece pessoas |
+
+Os três usam modelos embarcados (sem Play Services) e emitem um resultado só quando o conjunto de itens muda, no máximo uma vez por segundo.
+
+**MAUI** (`ScannerVcIaRfid.Maui.VisionExtras`):
+
+```csharp
+builder.UseVisionExtras();
+
+CameraScannerView.Engine = VisionExtraEngines.Objects;
+var objects = VisionExtrasPayload.ParseObjects(result.Value).Objects;
+```
+
+**Flutter** (`scanner_vc_ia_rfid_vision_extras` — basta estar no `pubspec.yaml`):
+
+```dart
+VisionScannerWidget(
+  engine: VisionExtraEngines.objects,
+  onScan: (result) => print(VisionExtrasPayload.parseObjects(result.value)),
+)
+```
+
+Exemplos em [`dotnet/ScannerVcIaRfid.Maui.Sample`](dotnet/ScannerVcIaRfid.Maui.Sample) e [`flutter/scanner_vc_ia_rfid_vision_extras/example`](flutter/scanner_vc_ia_rfid_vision_extras/example).
+
 ---
 
 ## Origem dos dados de leitura (`sourceEngine`)
@@ -435,6 +474,7 @@ Exemplos em [`dotnet/ScannerVcIaRfid.Maui.Sample`](dotnet/ScannerVcIaRfid.Maui.S
 | `Generic_Intent` | Leitor de Intent genérico (`createGeneric` / `UseGenericIntent` / `useGenericIntent`) |
 | `MLKit_Barcode` | Código de barras lido pela câmera (CameraX + ML Kit Barcode Scanning) |
 | `Google_CodeScanner` | Código de barras lido pela tela do Google Code Scanner |
+| `MLKit_Objects` / `MLKit_Labels` / `MLKit_Faces` | Motores extras de visão (ver acima) |
 | `Zebra_DataWedge_RFID` | Tag RFID UHF lida pelo plugin RFID Input do DataWedge (`RfidTag.sourceEngine`) |
 | `MLKit_OCR` | Texto lido pela câmera (CameraX + ML Kit Text Recognition). `value` é um JSON com `fullText` e `blocks` |
 
