@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using ScannerVcIaRfid.Maui.Ai.Services;
 using ScannerVcIaRfid.Maui.Controls;
 using ScannerVcIaRfid.Maui.Models;
 using ScannerVcIaRfid.Maui.Nfc.Models;
@@ -16,6 +17,8 @@ public partial class MainPage : ContentPage
     private readonly ICodeScannerService _codeScanner;
     private readonly INfcService _nfc;
     private readonly IRfidReaderService _rfid;
+    private readonly ILanguageAiService _languageAi;
+    private string? _lastReadText;
     private readonly HashSet<string> _inventoryEpcs = [];
     private bool _inventoryRunning;
 
@@ -23,7 +26,8 @@ public partial class MainPage : ContentPage
         IHardwareScannerService hardwareScanner,
         ICodeScannerService codeScanner,
         INfcService nfc,
-        IRfidReaderService rfid)
+        IRfidReaderService rfid,
+        ILanguageAiService languageAi)
     {
         InitializeComponent();
 
@@ -31,6 +35,7 @@ public partial class MainPage : ContentPage
         _codeScanner = codeScanner;
         _nfc = nfc;
         _rfid = rfid;
+        _languageAi = languageAi;
     }
 
     protected override async void OnAppearing()
@@ -155,10 +160,51 @@ public partial class MainPage : ContentPage
         // excecao de concorrencia de thread.
         MainThread.BeginInvokeOnMainThread(() =>
         {
+            _lastReadText = result.Format == "VISION_OCR" ? ReadOcrFullText(result.Value) : result.Value;
             LastScanLabel.Text = result.Format == "VISION_OCR"
                 ? FormatOcrSummary(result.Value)
                 : $"{result.Value}  ({result.Format} via {result.SourceEngine})";
         });
+    }
+
+    private static string? ReadOcrFullText(string rawJson)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<OcrPayload>(rawJson)?.FullText;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    // Exemplo de IA sobre a captura: o texto do OCR vira dados estruturados
+    // (datas, telefones, valores, rastreios...) sem sair do aparelho.
+    private async void OnExtractEntitiesClicked(object? sender, EventArgs e)
+    {
+        var text = _lastReadText;
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            AiLabel.Text = "Nenhum texto lido ainda.";
+            return;
+        }
+
+        try
+        {
+            AiLabel.Text = "Analisando...";
+            var language = await _languageAi.IdentifyLanguageAsync(text);
+            var entities = await _languageAi.ExtractEntitiesAsync(text, language == "und" ? "pt" : language);
+
+            AiLabel.Text = entities.Count == 0
+                ? $"Idioma: {language}. Nenhuma entidade encontrada."
+                : $"Idioma: {language}. " + string.Join("; ", entities.Select(
+                    entity => $"{entity.Entities.FirstOrDefault()?.Type}: {entity.Text}"));
+        }
+        catch (InvalidOperationException ex)
+        {
+            AiLabel.Text = ex.Message;
+        }
     }
 
     private static string FormatOcrSummary(string rawJson)

@@ -12,7 +12,8 @@ android {
 
     defaultConfig {
         applicationId = "com.scannervciarfid.sample"
-        minSdk = 24
+        // 26 por causa do modulo ai-language (ML Kit Entity Extraction).
+        minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -54,6 +55,7 @@ dependencies {
     implementation(project(":code-scanner"))
     implementation(project(":nfc"))
     implementation(project(":rfid"))
+    implementation(project(":ai-language"))
 
     implementation(libs.androidx.core.ktx)
     // Necessario para ComponentActivity.registerForActivityResult(...)

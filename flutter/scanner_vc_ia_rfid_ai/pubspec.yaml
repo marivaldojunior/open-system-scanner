@@ -1,0 +1,27 @@
+name: scanner_vc_ia_rfid_ai
+description: >
+  Plugin Flutter para o modulo nativo ai-language da scanner-vc-ia-rfid
+  (Android) - identificacao de idioma, traducao e extracao de entidades
+  on-device com ML Kit. Exige Android 8.0 (API 26).
+version: 0.1.0
+homepage:
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+  flutter: '>=3.19.0'
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.scannervciarfid.flutter.ai
+        pluginClass: ScannerVcIaRfidAiPlugin
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0

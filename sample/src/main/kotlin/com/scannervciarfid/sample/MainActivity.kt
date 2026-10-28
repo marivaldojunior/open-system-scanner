@@ -7,6 +7,8 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import com.scannervciarfid.ai.language.AiTextListener
+import com.scannervciarfid.ai.language.LanguageAiClient
 import com.scannervciarfid.codescanner.CodeScannerListener
 import com.scannervciarfid.codescanner.GoogleCodeScanner
 import com.scannervciarfid.core.ScanResult
@@ -24,6 +26,8 @@ import com.scannervciarfid.sample.databinding.ActivityMainBinding
 import com.scannervciarfid.vision.VisionScannerView
 import com.scannervciarfid.vision.barcode.BarcodeEngine
 import com.scannervciarfid.vision.ocr.OcrTextEngine
+import org.json.JSONArray
+import org.json.JSONObject
 
 /**
  * Prova de uso da biblioteca scannervciarfid em Android nativo puro,
@@ -70,9 +74,17 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private val languageAi = LanguageAiClient()
+    private var lastReadText: String? = null
+
     private val scannerListener = object : ScannerListener {
         override fun onScanSuccess(result: ScanResult) {
             runOnUiThread {
+                lastReadText = if (result.format == "VISION_OCR") {
+                    JSONObject(result.value).optString("fullText")
+                } else {
+                    result.value
+                }
                 binding.lastScanText.text =
                     "${result.value}  (${result.format} via ${result.sourceEngine})"
             }
@@ -106,6 +118,7 @@ class MainActivity : ComponentActivity() {
         binding.switchEngineButton.setOnClickListener { onSwitchEngineClicked() }
         binding.codeScannerButton.setOnClickListener { onCodeScannerClicked() }
         binding.rfidInventoryButton.setOnClickListener { onRfidInventoryClicked() }
+        binding.extractEntitiesButton.setOnClickListener { onExtractEntitiesClicked() }
         binding.rfidInventoryButton.isEnabled = rfidReader != null
         if (rfidReader == null) {
             binding.rfidText.text = "Este aparelho não tem leitor RFID suportado."
@@ -216,6 +229,41 @@ class MainActivity : ComponentActivity() {
             }
 
             override fun onScanError(error: String) = scannerListener.onScanError(error)
+        })
+    }
+
+    override fun onDestroy() {
+        languageAi.release()
+        super.onDestroy()
+    }
+
+    // IA sobre a captura: o texto do OCR vira dados estruturados (datas,
+    // telefones, valores, rastreios...) sem sair do aparelho.
+    private fun onExtractEntitiesClicked() {
+        val text = lastReadText
+        if (text.isNullOrBlank()) {
+            binding.aiText.text = "Nenhum texto lido ainda."
+            return
+        }
+
+        binding.aiText.text = "Analisando..."
+        languageAi.extractEntities(text, "pt", object : AiTextListener {
+            override fun onSuccess(result: String) {
+                val annotations = JSONArray(result)
+                binding.aiText.text = if (annotations.length() == 0) {
+                    "Nenhuma entidade encontrada."
+                } else {
+                    (0 until annotations.length()).joinToString("; ") { index ->
+                        val annotation = annotations.getJSONObject(index)
+                        val type = annotation.getJSONArray("entities").getJSONObject(0).getString("type")
+                        "$type: ${annotation.getString("text")}"
+                    }
+                }
+            }
+
+            override fun onError(error: String) {
+                binding.aiText.text = error
+            }
         })
     }
 

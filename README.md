@@ -71,6 +71,7 @@ flowchart TB
 | `code-scanner` | `GoogleCodeScanner` (leitura única, sem permissão de câmera) | `core`, Google Play Services |
 | `nfc` | `NfcTagReader` (Reader Mode: UID, tecnologias, registros NDEF) | — (só `android.nfc`) |
 | `rfid` | `RfidReader`, `RfidTagBuffer` (lotes), `ZebraDataWedgeRfidReader`, `RfidReaderFactory` | AndroidX Core |
+| `ai-language` | `LanguageAiClient` (idioma, tradução, extração de entidades) — **minSdk 26** | ML Kit Language ID, Translate, Entity Extraction |
 
 Cada recurso novo (NFC, RFID UHF, IA) entra como um módulo próprio, que depende de `core`. O módulo `vision` não conhece os motores: cada motor se registra no `VisionEngineRegistry` (ex.: `BarcodeEngine.register()`), e as pontes escolhem o motor pelo id.
 
@@ -124,6 +125,7 @@ scanner-vc-ia-rfid/
 ├── code-scanner/                          # GoogleCodeScanner (Play Services)
 ├── nfc/                                   # NfcTagReader (Reader Mode)
 ├── rfid/                                  # Contrato RFID UHF + leitor via DataWedge
+├── ai-language/                           # IA de linguagem on-device (ML Kit)
 ├── sample/                                # App Android nativo de exemplo
 │
 ├── dotnet/                                # Ponte .NET MAUI
@@ -171,6 +173,7 @@ Cada domínio tem o próprio pacote MAUI (com a própria binding) e o próprio p
 | Código de barras e câmera | `core`, `barcode-hardware`, `vision`, `vision-barcode`, `vision-ocr`, `code-scanner` | `ScannerVcIaRfid.Maui` | `scanner_vc_ia_rfid_flutter` |
 | NFC | `nfc` | `ScannerVcIaRfid.Maui.Nfc` | `scanner_vc_ia_rfid_nfc` |
 | RFID UHF | `rfid` | `ScannerVcIaRfid.Maui.Rfid` | `scanner_vc_ia_rfid_rfid` |
+| IA de linguagem | `ai-language` | `ScannerVcIaRfid.Maui.Ai` | `scanner_vc_ia_rfid_ai` |
 
 ## Guia rápido de integração
 
@@ -385,6 +388,39 @@ if (await rfid.isAvailable()) {
 
 Exemplos em [`dotnet/ScannerVcIaRfid.Maui.Sample`](dotnet/ScannerVcIaRfid.Maui.Sample) e [`flutter/scanner_vc_ia_rfid_rfid/example`](flutter/scanner_vc_ia_rfid_rfid/example).
 
+### IA de linguagem
+
+Tudo roda no aparelho, com ML Kit: o texto não sai do coletor e não exige Google Play Services.
+
+- **Identificação de idioma:** modelo embarcado, funciona offline desde a primeira chamada.
+- **Tradução:** baixa o modelo de cada idioma (~30 MB) na primeira chamada.
+- **Extração de entidades:** encontra datas, endereços, telefones, e-mails, valores, números de rastreio, IBAN, ISBN, cartões e URLs. Baixa o modelo do idioma na primeira chamada. É o par natural do OCR: o texto lido pela câmera vira dados estruturados.
+
+> [!WARNING]
+> Defina `minSdk 26` no app que usar este pacote. O ML Kit Entity Extraction exige Android 8.0 (API 26). Sem isso, o merge do manifesto falha. No MAUI, use `<SupportedOSPlatformVersion>26.0</SupportedOSPlatformVersion>`; no Flutter, `minSdk = 26` em `android/app/build.gradle.kts`.
+
+**MAUI** (`ScannerVcIaRfid.Maui.Ai`):
+
+```csharp
+builder.Services.AddSingleton<ILanguageAiService, LanguageAiService>();
+
+var language = await _languageAi.IdentifyLanguageAsync(ocrText);            // "pt"
+var entities = await _languageAi.ExtractEntitiesAsync(ocrText, language);    // DATE_TIME, PHONE, MONEY...
+var english = await _languageAi.TranslateAsync(ocrText, language, "en");
+```
+
+**Flutter** (`scanner_vc_ia_rfid_ai`):
+
+```dart
+final ai = ScannerVcIaRfidAi.instance;
+final entities = await ai.extractEntities(ocrText, languageTag: 'pt');
+final english = await ai.translate(ocrText, sourceLanguage: 'pt', targetLanguage: 'en');
+```
+
+O binding .NET do Entity Extraction não tem pacote NuGet: a binding `ScannerVcIaRfid.Ai.Android.Binding` baixa o `.aar` do Google Maven com `AndroidMavenLibrary` e declara cada dependência Java dele como `PackageReference`. O aviso XA4301 (`libtextclassifier3_jni_tclib.so` duplicada) é esperado: as cópias vêm do mesmo `.aar`.
+
+Exemplos em [`dotnet/ScannerVcIaRfid.Maui.Sample`](dotnet/ScannerVcIaRfid.Maui.Sample) e [`flutter/scanner_vc_ia_rfid_ai/example`](flutter/scanner_vc_ia_rfid_ai/example).
+
 ---
 
 ## Origem dos dados de leitura (`sourceEngine`)
@@ -421,7 +457,7 @@ A câmera não envia um resultado a cada frame. Um valor igual ao anterior só �
 | Componente | Versão mínima |
 |---|---|
 | `compileSdk` (módulos nativos) | 36 |
-| `minSdk` (módulos nativos) | 24 |
+| `minSdk` (módulos nativos) | 24 (26 no `ai-language`) |
 | Android Gradle Plugin | 9.3.1 |
 | CameraX | 1.6.1 |
 | Google ML Kit Barcode Scanning | 17.3.0 |

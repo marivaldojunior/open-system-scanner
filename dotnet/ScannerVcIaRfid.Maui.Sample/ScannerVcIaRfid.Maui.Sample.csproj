@@ -16,7 +16,9 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="$(TargetFramework.Contains('-android'))">
-    <SupportedOSPlatformVersion>24.0</SupportedOSPlatformVersion>
+    <!-- 26 por causa do ScannerVcIaRfid.Maui.Ai (ML Kit Entity Extraction). Um
+         app sem o pacote de IA pode ficar em 24. -->
+    <SupportedOSPlatformVersion>26.0</SupportedOSPlatformVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -33,6 +35,7 @@
     <ProjectReference Include="..\ScannerVcIaRfid.Maui\ScannerVcIaRfid.Maui.csproj" />
     <ProjectReference Include="..\ScannerVcIaRfid.Maui.Nfc\ScannerVcIaRfid.Maui.Nfc.csproj" />
     <ProjectReference Include="..\ScannerVcIaRfid.Maui.Rfid\ScannerVcIaRfid.Maui.Rfid.csproj" />
+    <ProjectReference Include="..\ScannerVcIaRfid.Maui.Ai\ScannerVcIaRfid.Maui.Ai.csproj" />
   </ItemGroup>
 
 </Project>

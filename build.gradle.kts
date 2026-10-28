@@ -22,7 +22,8 @@ val mauiBindings = mapOf(
         "core", "barcode-hardware", "vision", "vision-barcode", "vision-ocr", "code-scanner"
     ),
     "ScannerVcIaRfid.Nfc.Android.Binding" to listOf("nfc"),
-    "ScannerVcIaRfid.Rfid.Android.Binding" to listOf("rfid")
+    "ScannerVcIaRfid.Rfid.Android.Binding" to listOf("rfid"),
+    "ScannerVcIaRfid.Ai.Android.Binding" to listOf("ai-language")
 )
 
 allprojects {

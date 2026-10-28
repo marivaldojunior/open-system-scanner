@@ -69,6 +69,20 @@
         android:gravity="center"
         android:text="RFID: 0 tags" />
 
+    <Button
+        android:id="@+id/extractEntitiesButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="IA: entidades da última leitura" />
+
+    <TextView
+        android:id="@+id/aiText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="Leia um texto (OCR) ou código e toque acima" />
+
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
