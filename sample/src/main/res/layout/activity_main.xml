@@ -48,6 +48,14 @@
         android:text="Google Code Scanner" />
 
     <TextView
+        android:id="@+id/lastNfcText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:gravity="center"
+        android:text="Aproxime uma tag NFC" />
+
+    <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"

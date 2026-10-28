@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Permissao normal (concedida na instalacao, sem dialogo em runtime). -->
+    <uses-permission android:name="android.permission.NFC" />
+
+    <!--
+        required="false": o app continua instalavel em aparelhos sem NFC.
+        Use NfcTagReader.isSupported() para esconder a funcao nesses casos.
+    -->
+    <uses-feature
+        android:name="android.hardware.nfc"
+        android:required="false" />
+
+</manifest>

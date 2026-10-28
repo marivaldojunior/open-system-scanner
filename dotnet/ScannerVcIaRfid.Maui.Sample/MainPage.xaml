@@ -5,7 +5,7 @@
              x:Class="ScannerVcIaRfid.Maui.Sample.MainPage"
              Title="ScannerVcIaRfid">
 
-    <Grid RowDefinitions="Auto,300,Auto,Auto,Auto,Auto"
+    <Grid RowDefinitions="Auto,300,Auto,Auto,Auto,Auto,Auto"
           Padding="16"
           RowSpacing="16">
 
@@ -33,6 +33,12 @@
         <Button Grid.Row="4"
                 Text="Google Code Scanner"
                 Clicked="OnCodeScannerClicked" />
+
+        <Label x:Name="LastNfcLabel"
+               Grid.Row="6"
+               Text="Aproxime uma tag NFC"
+               FontSize="14"
+               HorizontalTextAlignment="Center" />
 
         <Label Grid.Row="5"
                Text="Ou pressione o gatilho físico do dispositivo"

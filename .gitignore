@@ -31,7 +31,7 @@ obj/
 .vs/
 
 # .aar copiados por `./gradlew exportMauiAars` - build output, nao versionar.
-dotnet/ScannerVcIaRfid.Android.Binding/Jars/*.aar
+dotnet/*/Jars/*.aar
 
 ### Flutter / Dart (flutter/) ###
 .dart_tool/

@@ -2,6 +2,8 @@ using System.Diagnostics;
 using System.Text.Json;
 using ScannerVcIaRfid.Maui.Controls;
 using ScannerVcIaRfid.Maui.Models;
+using ScannerVcIaRfid.Maui.Nfc.Models;
+using ScannerVcIaRfid.Maui.Nfc.Services;
 using ScannerVcIaRfid.Maui.Services;
 
 namespace ScannerVcIaRfid.Maui.Sample;
@@ -10,13 +12,15 @@ public partial class MainPage : ContentPage
 {
     private readonly IHardwareScannerService _hardwareScanner;
     private readonly ICodeScannerService _codeScanner;
+    private readonly INfcService _nfc;
 
-    public MainPage(IHardwareScannerService hardwareScanner, ICodeScannerService codeScanner)
+    public MainPage(IHardwareScannerService hardwareScanner, ICodeScannerService codeScanner, INfcService nfc)
     {
         InitializeComponent();
 
         _hardwareScanner = hardwareScanner;
         _codeScanner = codeScanner;
+        _nfc = nfc;
     }
 
     protected override async void OnAppearing()
@@ -35,6 +39,18 @@ public partial class MainPage : ContentPage
 
         CameraScannerView.Scanned += OnCameraScanned;
         CameraScannerView.ScanError += OnCameraScanError;
+
+        // NFC nao precisa de permissao em runtime (permissao normal).
+        if (_nfc.IsSupported)
+        {
+            _nfc.TagRead += OnNfcTagRead;
+            _nfc.NfcError += OnNfcError;
+            _nfc.Start();
+        }
+        else
+        {
+            LastNfcLabel.Text = "Este aparelho não tem NFC.";
+        }
 
         var cameraGranted = await EnsureCameraPermissionAsync();
         if (cameraGranted)
@@ -81,6 +97,10 @@ public partial class MainPage : ContentPage
 
         CameraScannerView.Scanned -= OnCameraScanned;
         CameraScannerView.ScanError -= OnCameraScanError;
+
+        _nfc.TagRead -= OnNfcTagRead;
+        _nfc.NfcError -= OnNfcError;
+        _nfc.Stop();
 
         // Release() nao e chamado aqui de proposito: o leitor de hardware e
         // um Singleton compartilhado pelo app inteiro. Desregistrar o
@@ -134,6 +154,25 @@ public partial class MainPage : ContentPage
             Debug.WriteLine($"[ScannerVcIaRfid] Falha ao desserializar payload OCR: {ex.Message}");
             return "OCR: falha ao interpretar o resultado.";
         }
+    }
+
+    private void OnNfcTagRead(object? sender, NfcTagEventArgs e)
+    {
+        // O texto do 1o registro NDEF, quando existe, e mais util que o UID.
+        var firstRecord = e.Tag.NdefRecords.FirstOrDefault();
+        var content = firstRecord?.Text ?? firstRecord?.Uri;
+
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            LastNfcLabel.Text = content is null
+                ? $"NFC {e.Tag.Uid} ({string.Join(", ", e.Tag.Technologies)})"
+                : $"NFC {e.Tag.Uid}: {content}";
+        });
+    }
+
+    private void OnNfcError(object? sender, NfcErrorEventArgs e)
+    {
+        MainThread.BeginInvokeOnMainThread(() => LastNfcLabel.Text = e.Message);
     }
 
     private void HandleScanError(string message)

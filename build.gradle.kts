@@ -20,7 +20,8 @@ plugins {
 val mauiBindings = mapOf(
     "ScannerVcIaRfid.Android.Binding" to listOf(
         "core", "barcode-hardware", "vision", "vision-barcode", "vision-ocr", "code-scanner"
-    )
+    ),
+    "ScannerVcIaRfid.Nfc.Android.Binding" to listOf("nfc")
 )
 
 allprojects {

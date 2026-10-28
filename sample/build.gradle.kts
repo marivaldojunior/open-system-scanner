@@ -52,6 +52,7 @@ dependencies {
     implementation(project(":vision-barcode"))
     implementation(project(":vision-ocr"))
     implementation(project(":code-scanner"))
+    implementation(project(":nfc"))
 
     implementation(libs.androidx.core.ktx)
     // Necessario para ComponentActivity.registerForActivityResult(...)

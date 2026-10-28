@@ -20,6 +20,7 @@ O time de app nunca precisa saber qual fabricante está por trás do coletor, ne
   - [Camada Flutter](#3-camada-flutter-plugin)
 - [Estrutura do repositório](#estrutura-do-repositório)
 - [Build dos módulos nativos](#build-dos-módulos-nativos)
+- [Pacotes por domínio](#pacotes-por-domínio)
 - [Guia rápido de integração](#guia-rápido-de-integração)
   - [Requisito global — permissão de câmera](#requisito-global--permissão-de-câmera)
   - [MAUI](#maui)
@@ -68,6 +69,7 @@ flowchart TB
 | `vision-barcode` | `BarcodeEngine` (id `"barcode"`) | `vision`, ML Kit Barcode |
 | `vision-ocr` | `OcrTextEngine` (id `"ocr"`) | `vision`, ML Kit Text Recognition |
 | `code-scanner` | `GoogleCodeScanner` (leitura única, sem permissão de câmera) | `core`, Google Play Services |
+| `nfc` | `NfcTagReader` (Reader Mode: UID, tecnologias, registros NDEF) | — (só `android.nfc`) |
 
 Cada recurso novo (NFC, RFID UHF, IA) entra como um módulo próprio, que depende de `core`. O módulo `vision` não conhece os motores: cada motor se registra no `VisionEngineRegistry` (ex.: `BarcodeEngine.register()`), e as pontes escolhem o motor pelo id.
 
@@ -118,6 +120,8 @@ scanner-vc-ia-rfid/
 ├── vision/                                # VisionScannerView (CameraX) + registro de motores
 ├── vision-barcode/                        # BarcodeEngine (ML Kit Barcode)
 ├── vision-ocr/                            # OcrTextEngine (ML Kit Text Recognition)
+├── code-scanner/                          # GoogleCodeScanner (Play Services)
+├── nfc/                                   # NfcTagReader (Reader Mode)
 ├── sample/                                # App Android nativo de exemplo
 │
 ├── dotnet/                                # Ponte .NET MAUI
@@ -155,6 +159,15 @@ Rode os comandos na raiz do repositório:
    A task copia `scanner-vc-ia-rfid-<módulo>.aar` para `dotnet/ScannerVcIaRfid.Android.Binding/Jars/`.
 
 Repita os dois passos sempre que alterar o código Kotlin. A versão publicada fica em `VERSION_NAME` (`gradle.properties`).
+
+## Pacotes por domínio
+
+Cada domínio tem o próprio pacote MAUI (com a própria binding) e o próprio plugin Flutter. O app instala só o que usar.
+
+| Domínio | Módulos nativos | MAUI | Flutter |
+|---|---|---|---|
+| Código de barras e câmera | `core`, `barcode-hardware`, `vision`, `vision-barcode`, `vision-ocr`, `code-scanner` | `ScannerVcIaRfid.Maui` | `scanner_vc_ia_rfid_flutter` |
+| NFC | `nfc` | `ScannerVcIaRfid.Maui.Nfc` | `scanner_vc_ia_rfid_nfc` |
 
 ## Guia rápido de integração
 
@@ -299,6 +312,41 @@ await ScannerVcIaRfidHardware.instance.useGenericIntent(
 ```
 
 Exemplo completo em [`flutter/scanner_vc_ia_rfid_flutter/example`](flutter/scanner_vc_ia_rfid_flutter/example).
+
+---
+
+### NFC
+
+O NFC usa uma permissão normal (sem diálogo em runtime) e só entrega tags com o app em primeiro plano. Cada tag traz o UID em hexadecimal, as tecnologias (`NfcA`, `MifareUltralight`, `Ndef`...) e os registros NDEF, com texto e URI já decodificados.
+
+**MAUI** (`ScannerVcIaRfid.Maui.Nfc`):
+
+```csharp
+builder.Services.AddSingleton<INfcService, NfcService>();
+
+// OnAppearing
+if (_nfc.IsSupported)
+{
+    _nfc.TagRead += (s, e) => Debug.WriteLine($"{e.Tag.Uid}: {e.Tag.NdefRecords.FirstOrDefault()?.Text}");
+    _nfc.Start();
+}
+
+// OnDisappearing
+_nfc.Stop();
+```
+
+**Flutter** (`scanner_vc_ia_rfid_nfc`):
+
+```dart
+_subscription = ScannerVcIaRfidNfc.instance.onTagRead.listen((tag) {
+  debugPrint('${tag.uid}: ${tag.ndefRecords.firstOrNull?.text}');
+});
+
+// dispose(): cancelar a subscription desliga o Reader Mode.
+_subscription?.cancel();
+```
+
+Exemplos em [`dotnet/ScannerVcIaRfid.Maui.Sample`](dotnet/ScannerVcIaRfid.Maui.Sample) e [`flutter/scanner_vc_ia_rfid_nfc/example`](flutter/scanner_vc_ia_rfid_nfc/example).
 
 ---
 

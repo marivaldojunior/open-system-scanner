@@ -13,6 +13,9 @@ import com.scannervciarfid.core.ScanResult
 import com.scannervciarfid.core.ScannerListener
 import com.scannervciarfid.core.UniversalScanner
 import com.scannervciarfid.hardware.HardwareScannerFactory
+import com.scannervciarfid.nfc.NfcTagData
+import com.scannervciarfid.nfc.NfcTagListener
+import com.scannervciarfid.nfc.NfcTagReader
 import com.scannervciarfid.sample.databinding.ActivityMainBinding
 import com.scannervciarfid.vision.VisionScannerView
 import com.scannervciarfid.vision.barcode.BarcodeEngine
@@ -32,6 +35,19 @@ class MainActivity : ComponentActivity() {
     private lateinit var hardwareScanner: UniversalScanner
     private var cameraScannerView: VisionScannerView? = null
     private var ocrEnabled = false
+    private val nfcTagReader = NfcTagReader()
+
+    private val nfcTagListener = object : NfcTagListener {
+        override fun onTagRead(tag: NfcTagData) {
+            runOnUiThread {
+                binding.lastNfcText.text = "NFC ${tag.uid}  (${tag.technologies})"
+            }
+        }
+
+        override fun onNfcError(error: String) {
+            runOnUiThread { binding.lastNfcText.text = error }
+        }
+    }
 
     private val scannerListener = object : ScannerListener {
         override fun onScanSuccess(result: ScanResult) {
@@ -79,6 +95,13 @@ class MainActivity : ComponentActivity() {
         hardwareScanner.initialize(applicationContext)
         hardwareScanner.setScannerListener(scannerListener)
         hardwareScanner.start()
+
+        if (NfcTagReader.isSupported(this)) {
+            nfcTagReader.setNfcTagListener(nfcTagListener)
+            nfcTagReader.start(this)
+        } else {
+            binding.lastNfcText.text = "Este aparelho não tem NFC."
+        }
     }
 
     override fun onStop() {
@@ -86,6 +109,9 @@ class MainActivity : ComponentActivity() {
         hardwareScanner.setScannerListener(null)
         hardwareScanner.stop()
         hardwareScanner.release()
+
+        nfcTagReader.stop()
+        nfcTagReader.setNfcTagListener(null)
 
         // VisionScannerView nao expoe um stopCamera() publico - remover a
         // view da arvore aciona onDetachedFromWindow(), que ja faz

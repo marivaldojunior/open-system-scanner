@@ -1,0 +1,20 @@
+name: scanner_vc_ia_rfid_nfc_example
+description: App de exemplo do plugin scanner_vc_ia_rfid_nfc.
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  scanner_vc_ia_rfid_nfc:
+    path: ../
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
