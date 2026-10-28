@@ -44,6 +44,8 @@
     <PackageReference Include="Xamarin.Google.MLKit.TextRecognition" Version="116.0.1.*" />
     <!-- play-services-code-scanner 16.1.0 (modulo code-scanner). -->
     <PackageReference Include="Xamarin.GooglePlayServices.Code.Scanner" Version="116.1.0.*" />
+    <!-- play-services-mlkit-document-scanner 16.0.0 (modulo document-scanner). -->
+    <PackageReference Include="Xamarin.GooglePlayServices.MLKit.DocumentScanner" Version="116.0.0.*" />
 
     <!--
       CameraX 1.6 / Lifecycle 2.11 sobem Fragment, Collection e Tracing para

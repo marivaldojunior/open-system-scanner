@@ -67,4 +67,5 @@ dependencies {
     implementation "com.scannervciarfid:vision-barcode:$scannerVcIaRfidVersion"
     implementation "com.scannervciarfid:vision-ocr:$scannerVcIaRfidVersion"
     implementation "com.scannervciarfid:code-scanner:$scannerVcIaRfidVersion"
+    implementation "com.scannervciarfid:document-scanner:$scannerVcIaRfidVersion"
 }

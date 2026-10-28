@@ -4,6 +4,9 @@ import android.app.Activity
 import com.scannervciarfid.codescanner.CodeScannerListener
 import com.scannervciarfid.codescanner.GoogleCodeScanner
 import com.scannervciarfid.core.ScanResult
+import com.scannervciarfid.documentscanner.DocumentScanListener
+import com.scannervciarfid.documentscanner.DocumentScanResult
+import com.scannervciarfid.documentscanner.GoogleDocumentScanner
 import com.scannervciarfid.hardware.HardwareScannerFactory
 import com.scannervciarfid.vision.barcode.BarcodeEngine
 import com.scannervciarfid.vision.ocr.OcrTextEngine
@@ -15,8 +18,9 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 
 /**
- * ActivityAware porque o Google Code Scanner abre uma Activity propria e
- * precisa da Activity atual do Flutter (o applicationContext nao serve).
+ * ActivityAware porque o Google Code Scanner e o Document Scanner abrem uma
+ * Activity propria e precisam da Activity atual do Flutter (o
+ * applicationContext nao serve).
  */
 class ScannerVcIaRfidPlugin : FlutterPlugin, ActivityAware, MethodChannel.MethodCallHandler {
 
@@ -67,6 +71,7 @@ class ScannerVcIaRfidPlugin : FlutterPlugin, ActivityAware, MethodChannel.Method
         when (call.method) {
             "useGenericIntent" -> useGenericIntent(call, result)
             "scanWithCodeScanner" -> scanWithCodeScanner(result)
+            "scanDocument" -> scanDocument(call, result)
             else -> result.notImplemented()
         }
     }
@@ -103,6 +108,35 @@ class ScannerVcIaRfidPlugin : FlutterPlugin, ActivityAware, MethodChannel.Method
 
             override fun onScanError(error: String) = result.error("SCAN_ERROR", error, null)
         })
+    }
+
+    private fun scanDocument(call: MethodCall, result: MethodChannel.Result) {
+        val currentActivity = activity
+        if (currentActivity == null) {
+            result.error("NO_ACTIVITY", "Nenhuma Activity ativa para abrir o Google Document Scanner.", null)
+            return
+        }
+
+        GoogleDocumentScanner.scan(
+            currentActivity,
+            call.argument<Int>("pageLimit") ?: 0,
+            call.argument<Boolean>("includePdf") ?: true,
+            call.argument<Boolean>("allowGalleryImport") ?: false,
+            object : DocumentScanListener {
+                override fun onScanSuccess(scanResult: DocumentScanResult) = result.success(
+                    mapOf(
+                        "pageImageUris" to scanResult.pageImageUris.toList(),
+                        "pdfUri" to scanResult.pdfUri.ifEmpty { null },
+                        "pageCount" to scanResult.pageCount
+                    )
+                )
+
+                // null no Dart = cancelado pelo usuario (nao e erro).
+                override fun onScanCanceled() = result.success(null)
+
+                override fun onScanError(error: String) = result.error("SCAN_ERROR", error, null)
+            }
+        )
     }
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {

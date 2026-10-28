@@ -41,6 +41,7 @@ public static class MauiProgram
 #if ANDROID
         builder.Services.AddSingleton<IHardwareScannerService, HardwareScannerService>();
         builder.Services.AddSingleton<ICodeScannerService, CodeScannerService>();
+        builder.Services.AddSingleton<IDocumentScannerService, DocumentScannerService>();
         builder.Services.AddSingleton<INfcService, NfcService>();
         builder.Services.AddSingleton<IRfidReaderService, RfidReaderService>();
         builder.Services.AddSingleton<ILanguageAiService, LanguageAiService>();

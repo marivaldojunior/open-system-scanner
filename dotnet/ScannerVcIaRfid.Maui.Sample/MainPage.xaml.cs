@@ -16,6 +16,7 @@ public partial class MainPage : ContentPage
 {
     private readonly IHardwareScannerService _hardwareScanner;
     private readonly ICodeScannerService _codeScanner;
+    private readonly IDocumentScannerService _documentScanner;
     private readonly INfcService _nfc;
     private readonly IRfidReaderService _rfid;
     private readonly ILanguageAiService _languageAi;
@@ -27,6 +28,7 @@ public partial class MainPage : ContentPage
     public MainPage(
         IHardwareScannerService hardwareScanner,
         ICodeScannerService codeScanner,
+        IDocumentScannerService documentScanner,
         INfcService nfc,
         IRfidReaderService rfid,
         ILanguageAiService languageAi)
@@ -35,6 +37,7 @@ public partial class MainPage : ContentPage
 
         _hardwareScanner = hardwareScanner;
         _codeScanner = codeScanner;
+        _documentScanner = documentScanner;
         _nfc = nfc;
         _rfid = rfid;
         _languageAi = languageAi;
@@ -342,6 +345,22 @@ public partial class MainPage : ContentPage
             // conceder a permissao numa segunda tentativa (ver
             // EnsureCameraPermissionAsync/OnAppearing).
             CameraScannerView.StartCamera();
+        }
+    }
+
+    // Digitalizacao pela tela do Google Play Services: ate 5 paginas, com PDF.
+    private async void OnDocumentScannerClicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            var result = await _documentScanner.ScanAsync(pageLimit: 5);
+            LastScanLabel.Text = result is null
+                ? "Digitalização cancelada."
+                : $"Documento: {result.PageCount} página(s) - {result.PdfUri}";
+        }
+        catch (InvalidOperationException ex)
+        {
+            HandleScanError(ex.Message);
         }
     }
 

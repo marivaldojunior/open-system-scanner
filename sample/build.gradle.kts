@@ -59,6 +59,7 @@ dependencies {
     implementation(project(":vision-barcode"))
     implementation(project(":vision-ocr"))
     implementation(project(":code-scanner"))
+    implementation(project(":document-scanner"))
     implementation(project(":nfc"))
     implementation(project(":rfid"))
     // So com o SDK Zebra RFID API3 em libs/. O modulo rfid-zebra declara o SDK

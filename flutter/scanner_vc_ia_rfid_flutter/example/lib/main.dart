@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:scanner_vc_ia_rfid_flutter/code_scanner.dart';
+import 'package:scanner_vc_ia_rfid_flutter/document_scanner.dart';
 import 'package:scanner_vc_ia_rfid_flutter/scanner_vc_ia_rfid_hardware.dart';
 import 'package:scanner_vc_ia_rfid_flutter/vision_scanner_widget.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -129,6 +130,21 @@ class _ScannerExampleScreenState extends State<ScannerExampleScreen> {
     }
   }
 
+  // Digitalizacao pela tela do Google Play Services: ate 5 paginas, com PDF.
+  Future<void> _scanDocument() async {
+    try {
+      final result = await ScannerVcIaRfidDocumentScanner.instance.scan(pageLimit: 5);
+      if (result == null || !mounted) return;
+      setState(() {
+        _lastValue = 'Documento: ${result.pageCount} página(s)';
+        _lastFormat = 'PDF';
+        _lastSourceEngine = result.pdfUri ?? '';
+      });
+    } on PlatformException catch (error) {
+      debugPrint('[ScannerVcIaRfid] erro no Google Document Scanner: ${error.message}');
+    }
+  }
+
   void _handleCameraScanError(String message) {
     debugPrint('[ScannerVcIaRfid] erro na leitura via camera: $message');
   }
@@ -183,6 +199,10 @@ class _ScannerExampleScreenState extends State<ScannerExampleScreen> {
               OutlinedButton(
                 onPressed: _scanWithCodeScanner,
                 child: const Text('Google Code Scanner'),
+              ),
+              OutlinedButton(
+                onPressed: _scanDocument,
+                child: const Text('Digitalizar documento'),
               ),
               const SizedBox(height: 16),
               // PlatformViews exigem dimensoes explicitas no lado Flutter -

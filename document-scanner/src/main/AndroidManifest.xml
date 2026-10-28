@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!--
+            Activity transparente e interna: abre o scanner do Google e
+            devolve o resultado ao DocumentScanListener. Assim o app nao
+            precisa tratar onActivityResult (MAUI, Flutter e nativo usam a
+            mesma chamada GoogleDocumentScanner.scan).
+        -->
+        <activity
+            android:name="com.scannervciarfid.documentscanner.DocumentScannerActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+    </application>
+
+</manifest>

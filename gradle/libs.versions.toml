@@ -8,6 +8,7 @@ camerax = "1.6.1"
 mlkit-barcode = "17.3.0"
 mlkit-text-recognition = "16.0.1"
 gms-code-scanner = "16.1.0"
+gms-document-scanner = "16.0.0"
 mlkit-language-id = "17.0.6"
 mlkit-translate = "17.0.3"
 mlkit-entity-extraction = "16.0.0-beta6"
@@ -28,6 +29,7 @@ camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = 
 camera-view = { module = "androidx.camera:camera-view", version.ref = "camerax" }
 mlkit-barcode-scanning = { module = "com.google.mlkit:barcode-scanning", version.ref = "mlkit-barcode" }
 mlkit-text-recognition = { module = "com.google.mlkit:text-recognition", version.ref = "mlkit-text-recognition" }
+gms-document-scanner = { module = "com.google.android.gms:play-services-mlkit-document-scanner", version.ref = "gms-document-scanner" }
 gms-code-scanner = { module = "com.google.android.gms:play-services-code-scanner", version.ref = "gms-code-scanner" }
 mlkit-language-id = { module = "com.google.mlkit:language-id", version.ref = "mlkit-language-id" }
 mlkit-translate = { module = "com.google.mlkit:translate", version.ref = "mlkit-translate" }
@@ -41,6 +43,7 @@ lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", v
 androidx-core = { module = "androidx.core:core", version.ref = "androidx-core" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
 androidx-localbroadcastmanager = { module = "androidx.localbroadcastmanager:localbroadcastmanager", version.ref = "androidx-localbroadcastmanager" }
+androidx-activity = { module = "androidx.activity:activity", version.ref = "androidx-activity" }
 androidx-activity-ktx = { module = "androidx.activity:activity-ktx", version.ref = "androidx-activity" }
 junit = { module = "junit:junit", version.ref = "junit" }
 androidx-test-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-test-junit" }

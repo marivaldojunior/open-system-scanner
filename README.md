@@ -69,6 +69,7 @@ flowchart TB
 | `vision-barcode` | `BarcodeEngine` (id `"barcode"`) | `vision`, ML Kit Barcode |
 | `vision-ocr` | `OcrTextEngine` (id `"ocr"`) | `vision`, ML Kit Text Recognition |
 | `code-scanner` | `GoogleCodeScanner` (leitura única, sem permissão de câmera) | `core`, Google Play Services |
+| `document-scanner` | `GoogleDocumentScanner` (recorte, perspectiva, JPEG e PDF) | Google Play Services |
 | `nfc` | `NfcTagReader` (Reader Mode: UID, tecnologias, registros NDEF) | — (só `android.nfc`) |
 | `rfid` | `RfidReader`, `RfidTagBuffer` (lotes), `ZebraDataWedgeRfidReader`, `RfidReaderFactory` | AndroidX Core |
 | `rfid-zebra` (opcional) | `ZebraApi3RfidReader` (SDK Zebra RFID API3) — **minSdk 29**, só entra no build com o SDK em `libs/` | `rfid`, SDK Zebra (`compileOnly`), LocalBroadcastManager |
@@ -127,6 +128,7 @@ scanner-vc-ia-rfid/
 ├── vision-barcode/                        # BarcodeEngine (ML Kit Barcode)
 ├── vision-ocr/                            # OcrTextEngine (ML Kit Text Recognition)
 ├── code-scanner/                          # GoogleCodeScanner (Play Services)
+├── document-scanner/                      # GoogleDocumentScanner (Play Services)
 ├── nfc/                                   # NfcTagReader (Reader Mode)
 ├── rfid/                                  # Contrato RFID UHF + leitor via DataWedge
 ├── rfid-zebra/                            # Leitor pelo SDK Zebra RFID API3 (opcional)
@@ -178,7 +180,7 @@ Cada domínio tem o próprio pacote MAUI (com a própria binding) e o próprio p
 
 | Domínio | Módulos nativos | MAUI | Flutter |
 |---|---|---|---|
-| Código de barras e câmera | `core`, `barcode-hardware`, `vision`, `vision-barcode`, `vision-ocr`, `code-scanner` | `ScannerVcIaRfid.Maui` | `scanner_vc_ia_rfid_flutter` |
+| Código de barras, câmera e documentos | `core`, `barcode-hardware`, `vision`, `vision-barcode`, `vision-ocr`, `code-scanner`, `document-scanner` | `ScannerVcIaRfid.Maui` | `scanner_vc_ia_rfid_flutter` |
 | NFC | `nfc` | `ScannerVcIaRfid.Maui.Nfc` | `scanner_vc_ia_rfid_nfc` |
 | RFID UHF | `rfid`, `rfid-zebra` (opcional) | `ScannerVcIaRfid.Maui.Rfid` | `scanner_vc_ia_rfid_rfid` |
 | IA de linguagem | `ai-language` | `ScannerVcIaRfid.Maui.Ai` | `scanner_vc_ia_rfid_ai` |
@@ -257,7 +259,16 @@ builder.Services.AddSingleton<ICodeScannerService, CodeScannerService>();
 var result = await _codeScanner.ScanAsync(); // null = usuário cancelou
 ```
 
-**6. Coletor sem adapter próprio** (Chainway, Sunmi, Seuic...): configure a saída Intent no aparelho e informe a mesma action e o mesmo extra:
+**6. Digitalização de documentos com o Google Document Scanner** (opcional, exige Play Services, sem permissão de câmera). O Google faz a captura, o recorte e a correção de perspectiva:
+
+```csharp
+builder.Services.AddSingleton<IDocumentScannerService, DocumentScannerService>();
+
+var document = await _documentScanner.ScanAsync(pageLimit: 5); // null = usuário cancelou
+// document.PageImageUris (JPEG por página), document.PdfUri
+```
+
+**7. Coletor sem adapter próprio** (Chainway, Sunmi, Seuic...): configure a saída Intent no aparelho e informe a mesma action e o mesmo extra:
 
 ```csharp
 _hardwareScanner.UseGenericIntent("com.minhaempresa.SCAN", "data");
@@ -317,7 +328,14 @@ SizedBox(
 final result = await ScannerVcIaRfidCodeScanner.instance.scan(); // null = cancelado
 ```
 
-**6. Coletor sem adapter próprio** (Chainway, Sunmi, Seuic...): configure a saída Intent no aparelho e informe a mesma action e o mesmo extra:
+**6. Digitalização de documentos com o Google Document Scanner** (opcional, exige Play Services, sem permissão de câmera):
+
+```dart
+final document = await ScannerVcIaRfidDocumentScanner.instance.scan(pageLimit: 5); // null = cancelado
+// document.pageImageUris (JPEG por página), document.pdfUri
+```
+
+**7. Coletor sem adapter próprio** (Chainway, Sunmi, Seuic...): configure a saída Intent no aparelho e informe a mesma action e o mesmo extra:
 
 ```dart
 await ScannerVcIaRfidHardware.instance.useGenericIntent(
@@ -561,6 +579,7 @@ A câmera não envia um resultado a cada frame. Um valor igual ao anterior só �
 | CameraX | 1.6.1 |
 | Google ML Kit Barcode Scanning | 17.3.0 |
 | Google Play Services Code Scanner | 16.1.0 |
+| Google Play Services Document Scanner | 16.0.0 |
 | Google ML Kit Text Recognition | 16.0.1 |
 | .NET | 10.0 (`net10.0-android`) |
 | Flutter | 3.19+ / Dart 3.3+ |

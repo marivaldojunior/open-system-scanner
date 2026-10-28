@@ -47,6 +47,13 @@
         android:layout_marginTop="8dp"
         android:text="Google Code Scanner" />
 
+    <Button
+        android:id="@+id/documentScannerButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Digitalizar documento" />
+
     <TextView
         android:id="@+id/lastNfcText"
         android:layout_width="match_parent"

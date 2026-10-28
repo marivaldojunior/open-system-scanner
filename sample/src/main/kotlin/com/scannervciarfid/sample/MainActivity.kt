@@ -12,6 +12,9 @@ import com.scannervciarfid.ai.language.LanguageAiClient
 import com.scannervciarfid.codescanner.CodeScannerListener
 import com.scannervciarfid.codescanner.GoogleCodeScanner
 import com.scannervciarfid.core.ScanResult
+import com.scannervciarfid.documentscanner.DocumentScanListener
+import com.scannervciarfid.documentscanner.DocumentScanResult
+import com.scannervciarfid.documentscanner.GoogleDocumentScanner
 import com.scannervciarfid.core.ScannerListener
 import com.scannervciarfid.core.UniversalScanner
 import com.scannervciarfid.hardware.HardwareScannerFactory
@@ -121,6 +124,7 @@ class MainActivity : ComponentActivity() {
         binding.activateCameraButton.setOnClickListener { onActivateCameraClicked() }
         binding.switchEngineButton.setOnClickListener { onSwitchEngineClicked() }
         binding.codeScannerButton.setOnClickListener { onCodeScannerClicked() }
+        binding.documentScannerButton.setOnClickListener { onDocumentScannerClicked() }
         binding.rfidInventoryButton.setOnClickListener { onRfidInventoryClicked() }
         binding.extractEntitiesButton.setOnClickListener { onExtractEntitiesClicked() }
         binding.rfidInventoryButton.isEnabled = rfidReader != null
@@ -286,6 +290,21 @@ class MainActivity : ComponentActivity() {
         inventoryRunning = running
         binding.rfidInventoryButton.text =
             if (running) "Parar inventário RFID" else "Iniciar inventário RFID"
+    }
+
+    // Digitalizacao pela tela do Google Play Services: ate 5 paginas, com PDF.
+    private fun onDocumentScannerClicked() {
+        GoogleDocumentScanner.scan(this, 5, true, false, object : DocumentScanListener {
+            override fun onScanSuccess(result: DocumentScanResult) {
+                binding.lastScanText.text = "Documento: ${result.pageCount} página(s) - ${result.pdfUri}"
+            }
+
+            override fun onScanCanceled() {
+                Toast.makeText(this@MainActivity, "Digitalização cancelada.", Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onScanError(error: String) = scannerListener.onScanError(error)
+        })
     }
 
     private fun hideCamera() {

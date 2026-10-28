@@ -15,6 +15,7 @@ pasta:
 - `scanner-vc-ia-rfid-vision-barcode.aar`
 - `scanner-vc-ia-rfid-vision-ocr.aar`
 - `scanner-vc-ia-rfid-code-scanner.aar`
+- `scanner-vc-ia-rfid-document-scanner.aar`
 
 O `.csproj` inclui todo `Jars\*.aar`. Módulos de outros domínios (ex.: `nfc`)
 vão para a pasta `Jars/` da binding do domínio. Os `.aar` não são versionados neste
