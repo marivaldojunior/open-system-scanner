@@ -5,7 +5,7 @@
              x:Class="ScannerVcIaRfid.Maui.Sample.MainPage"
              Title="ScannerVcIaRfid">
 
-    <Grid RowDefinitions="Auto,300,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+    <Grid RowDefinitions="Auto,300,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
           Padding="16"
           RowSpacing="16">
 
@@ -50,6 +50,11 @@
                Text="RFID: 0 tags"
                FontSize="14"
                HorizontalTextAlignment="Center" />
+
+        <Button x:Name="ReadTidButton"
+                Grid.Row="11"
+                Text="RFID: ler TID da última tag"
+                Clicked="OnReadTidClicked" />
 
         <Button Grid.Row="9"
                 Text="IA: entidades da última leitura"

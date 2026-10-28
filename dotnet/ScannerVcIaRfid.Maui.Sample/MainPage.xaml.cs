@@ -21,6 +21,7 @@ public partial class MainPage : ContentPage
     private readonly ILanguageAiService _languageAi;
     private string? _lastReadText;
     private readonly HashSet<string> _inventoryEpcs = [];
+    private string? _lastEpc;
     private bool _inventoryRunning;
 
     public MainPage(
@@ -281,7 +282,41 @@ public partial class MainPage : ContentPage
             _inventoryEpcs.Add(tag.Epc);
         }
 
-        RfidLabel.Text = $"RFID: {_inventoryEpcs.Count} tags (última: {e.Tags[^1].Epc})";
+        _lastEpc = e.Tags[^1].Epc;
+        RfidLabel.Text = $"RFID: {_inventoryEpcs.Count} tags (última: {_lastEpc})";
+    }
+
+    // Operacao por tag (so com o SDK Zebra RFID API3): le as 6 primeiras
+    // palavras do banco TID, o identificador gravado de fabrica no chip.
+    private async void OnReadTidClicked(object? sender, EventArgs e)
+    {
+        if (!_rfid.SupportsTagOperations)
+        {
+            RfidLabel.Text = "Operações por tag exigem o SDK Zebra RFID API3.";
+            return;
+        }
+
+        if (_lastEpc is null)
+        {
+            RfidLabel.Text = "Faça um inventário antes.";
+            return;
+        }
+
+        if (_inventoryRunning)
+        {
+            _rfid.StopInventory();
+            SetInventoryRunning(false);
+        }
+
+        try
+        {
+            var tid = await _rfid.ReadMemoryAsync(_lastEpc, RfidMemoryBank.Tid, wordOffset: 0, wordCount: 6);
+            RfidLabel.Text = $"TID de {_lastEpc}: {tid}";
+        }
+        catch (InvalidOperationException ex)
+        {
+            RfidLabel.Text = ex.Message;
+        }
     }
 
     private void OnRfidError(object? sender, RfidErrorEventArgs e) => RfidLabel.Text = e.Message;

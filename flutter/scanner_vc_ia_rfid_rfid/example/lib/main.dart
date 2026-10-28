@@ -34,9 +34,13 @@ class _RfidExampleScreenState extends State<RfidExampleScreen> {
   final Map<String, RfidTag> _inventory = {};
 
   StreamSubscription<List<RfidTag>>? _subscription;
+  StreamSubscription<RfidLocateEvent>? _locateSubscription;
   bool? _available;
+  bool _supportsOperations = false;
   bool _running = false;
   String? _error;
+  String? _locatingEpc;
+  int _distance = 0;
 
   @override
   void initState() {
@@ -60,6 +64,85 @@ class _RfidExampleScreenState extends State<RfidExampleScreen> {
         _error = error is PlatformException ? error.message : error.toString();
       }),
     );
+
+    // Operacoes por tag so existem com o SDK Zebra RFID API3.
+    final supportsOperations = await _rfid.supportsTagOperations();
+    if (!mounted) return;
+    setState(() => _supportsOperations = supportsOperations);
+    if (supportsOperations) {
+      _locateSubscription = _rfid.onTagLocated.listen(
+        (event) => setState(() => _distance = event.relativeDistance),
+      );
+    }
+  }
+
+  Future<void> _stopInventoryIfRunning() async {
+    if (_running) {
+      await _rfid.stopInventory();
+      setState(() => _running = false);
+    }
+  }
+
+  // Le as 6 primeiras palavras do TID: o identificador gravado de fabrica no chip.
+  Future<void> _readTid(String epc) async {
+    try {
+      await _stopInventoryIfRunning();
+      final tid = await _rfid.readMemory(epc, bank: RfidMemoryBank.tid, wordCount: 6);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('TID: $tid')));
+    } on PlatformException catch (error) {
+      setState(() => _error = error.message);
+    }
+  }
+
+  Future<void> _toggleLocate(String epc) async {
+    try {
+      if (_locatingEpc != null) {
+        await _rfid.stopLocate();
+        setState(() => _locatingEpc = null);
+        return;
+      }
+      await _stopInventoryIfRunning();
+      setState(() {
+        _locatingEpc = epc;
+        _distance = 0;
+      });
+      await _rfid.startLocate(epc);
+    } on PlatformException catch (error) {
+      setState(() {
+        _locatingEpc = null;
+        _error = error.message;
+      });
+    }
+  }
+
+  void _showTagActions(String epc) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.memory),
+              title: const Text('Ler TID'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                unawaited(_readTid(epc));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.radar),
+              title: const Text('Localizar'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                unawaited(_toggleLocate(epc));
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _toggleInventory() async {
@@ -79,6 +162,7 @@ class _RfidExampleScreenState extends State<RfidExampleScreen> {
   @override
   void dispose() {
     _subscription?.cancel();
+    _locateSubscription?.cancel();
     super.dispose();
   }
 
@@ -104,6 +188,15 @@ class _RfidExampleScreenState extends State<RfidExampleScreen> {
                       const SizedBox(height: 8),
                       Text('${_inventory.length} tags únicas'),
                       if (_error != null) Text(_error!, style: const TextStyle(color: Colors.red)),
+                      if (_locatingEpc != null) ...[
+                        const SizedBox(height: 8),
+                        Text('Localizando $_locatingEpc: $_distance%'),
+                        LinearProgressIndicator(value: _distance / 100),
+                        TextButton(
+                          onPressed: () => _toggleLocate(_locatingEpc!),
+                          child: const Text('Parar localização'),
+                        ),
+                      ],
                       const SizedBox(height: 8),
                       Expanded(
                         child: ListView(
@@ -113,6 +206,8 @@ class _RfidExampleScreenState extends State<RfidExampleScreen> {
                                 dense: true,
                                 title: Text(tag.epc),
                                 subtitle: Text('RSSI: ${tag.rssi ?? '-'}  ·  leituras: ${tag.readCount}'),
+                                // Toque: acoes por tag (so com o SDK Zebra RFID API3).
+                                onTap: _supportsOperations ? () => _showTagActions(tag.epc) : null,
                               ),
                           ],
                         ),

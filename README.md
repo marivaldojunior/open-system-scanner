@@ -395,8 +395,37 @@ O SDK é proprietário: ele não fica no Git e não é publicado com o módulo (
 - **MAUI:** a binding `ScannerVcIaRfid.Rfid.Android.Binding` inclui o `rfid-zebra` e o SDK de `libs/` (`Bind="false"`) quando eles existem. O app só precisa de `<SupportedOSPlatformVersion>29.0</SupportedOSPlatformVersion>` e do `tools:replace`.
 - **Flutter:** defina `scannerVcIaRfidZebraApi3=true` no `android/gradle.properties` do app e adicione o SDK em `android/app/build.gradle.kts`: `implementation(files("<caminho>/rfidapi3lib-<versão>.aar"))`.
 
-> [!IMPORTANT]
-> Leitura e gravação de bancos de memória, lock/kill, localização por RSSI e ajuste de potência ainda não estão no contrato `RfidReader`. O SDK API3 suporta essas operações; elas entram numa próxima etapa.
+#### Operações por tag
+
+O contrato `RfidTagOperations` (módulo `rfid`) cobre as operações que dependem do SDK do fabricante. Hoje só o `ZebraApi3RfidReader` o implementa; o leitor DataWedge só faz inventário. As pontes informam o suporte em `SupportsTagOperations` (MAUI) e `supportsTagOperations()` (Flutter).
+
+| Operação | MAUI (`IRfidReaderService`) | Flutter (`ScannerVcIaRfidRfid`) |
+|---|---|---|
+| Ler memória (hexadecimal) | `ReadMemoryAsync(epc, bank, wordOffset, wordCount)` | `readMemory(epc, bank:, wordCount:)` |
+| Gravar memória | `WriteMemoryAsync(epc, bank, wordOffset, dataHex)` | `writeMemory(epc, bank:, dataHex:)` |
+| Lock / unlock / permalock | `LockAsync(epc, field, privilege, accessPassword)` | `lock(epc, field:, privilege:, accessPassword:)` |
+| Kill | `KillAsync(epc, killPassword)` | `kill(epc, killPassword:)` |
+| Localizar por distância (0 a 100) | `StartLocate(epc)` / `StopLocate()` + evento `TagLocated` | `startLocate(epc)` / `stopLocate()` + stream `onTagLocated` |
+| Potência (dBm, nível mais próximo) | `SetTransmitPowerAsync(dbm)` | `setTransmitPower(dbm)` |
+| Sessão Gen2 (0 a 3) | `SetSessionAsync(session)` | `setSession(session)` |
+
+Regras comuns:
+
+- Pare o inventário antes de uma operação: o leitor não faz as duas coisas ao mesmo tempo. Durante a localização, o gatilho físico não inicia inventário.
+- Bancos: `Reserved`, `Epc`, `Tid`, `User`. Offset e tamanho em palavras de 16 bits; dados em hexadecimal (4 dígitos por palavra).
+- Senhas: 8 dígitos hexadecimais (`"00000000"` = sem senha).
+- A potência usa a tabela de níveis do leitor (`getTransmitPowerLevelValues`, em décimos de dBm) e devolve o valor aplicado.
+
+```csharp
+var tid = await _rfid.ReadMemoryAsync(epc, RfidMemoryBank.Tid, wordOffset: 0, wordCount: 6);
+```
+
+```dart
+final tid = await ScannerVcIaRfidRfid.instance.readMemory(epc, bank: RfidMemoryBank.tid, wordCount: 6);
+```
+
+> [!CAUTION]
+> Não use `kill`, `PermaLock` nem `PermaUnlock` em teste com tags de produção. Essas operações não têm volta: a tag morta não responde mais, e o bloqueio permanente não pode ser desfeito.
 
 **MAUI** (`ScannerVcIaRfid.Maui.Rfid`):
 
