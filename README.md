@@ -70,6 +70,7 @@ flowchart TB
 | `vision-ocr` | `OcrTextEngine` (id `"ocr"`) | `vision`, ML Kit Text Recognition |
 | `code-scanner` | `GoogleCodeScanner` (leitura única, sem permissão de câmera) | `core`, Google Play Services |
 | `nfc` | `NfcTagReader` (Reader Mode: UID, tecnologias, registros NDEF) | — (só `android.nfc`) |
+| `rfid` | `RfidReader`, `RfidTagBuffer` (lotes), `ZebraDataWedgeRfidReader`, `RfidReaderFactory` | AndroidX Core |
 
 Cada recurso novo (NFC, RFID UHF, IA) entra como um módulo próprio, que depende de `core`. O módulo `vision` não conhece os motores: cada motor se registra no `VisionEngineRegistry` (ex.: `BarcodeEngine.register()`), e as pontes escolhem o motor pelo id.
 
@@ -122,6 +123,7 @@ scanner-vc-ia-rfid/
 ├── vision-ocr/                            # OcrTextEngine (ML Kit Text Recognition)
 ├── code-scanner/                          # GoogleCodeScanner (Play Services)
 ├── nfc/                                   # NfcTagReader (Reader Mode)
+├── rfid/                                  # Contrato RFID UHF + leitor via DataWedge
 ├── sample/                                # App Android nativo de exemplo
 │
 ├── dotnet/                                # Ponte .NET MAUI
@@ -168,6 +170,7 @@ Cada domínio tem o próprio pacote MAUI (com a própria binding) e o próprio p
 |---|---|---|---|
 | Código de barras e câmera | `core`, `barcode-hardware`, `vision`, `vision-barcode`, `vision-ocr`, `code-scanner` | `ScannerVcIaRfid.Maui` | `scanner_vc_ia_rfid_flutter` |
 | NFC | `nfc` | `ScannerVcIaRfid.Maui.Nfc` | `scanner_vc_ia_rfid_nfc` |
+| RFID UHF | `rfid` | `ScannerVcIaRfid.Maui.Rfid` | `scanner_vc_ia_rfid_rfid` |
 
 ## Guia rápido de integração
 
@@ -348,6 +351,40 @@ _subscription?.cancel();
 
 Exemplos em [`dotnet/ScannerVcIaRfid.Maui.Sample`](dotnet/ScannerVcIaRfid.Maui.Sample) e [`flutter/scanner_vc_ia_rfid_nfc/example`](flutter/scanner_vc_ia_rfid_nfc/example).
 
+### RFID UHF
+
+O leitor entrega as tags **em lotes** (`RfidTagBuffer`, janela de 100 ms): cada EPC aparece uma vez por lote, com o número de leituras e o maior RSSI. Para um inventário de tags únicas, guarde os EPCs num conjunto no app.
+
+Hoje existe um leitor: `ZebraDataWedgeRfidReader`, pelo plugin "RFID Input" do DataWedge (MC3300R, RFD40, RFD90, TC53E, EM45, ET6X). Ele usa o mesmo perfil DataWedge do leitor de código de barras e separa as leituras pelo extra `com.symbol.datawedge.source`. O gatilho físico já dispara o inventário; `startInventory()`/`stopInventory()` usam o `SOFT_RFID_TRIGGER` (o `STOP_SCANNING` exige DataWedge 11.3+).
+
+> [!IMPORTANT]
+> O DataWedge só entrega o EPC: sem RSSI, sem leitura/gravação de bancos de memória, sem lock/kill e sem localização. Essas operações exigem o SDK do fabricante (Zebra RFID API3, Chainway, Urovo...). Cada SDK entra como um módulo próprio que implementa `RfidReader`.
+
+**MAUI** (`ScannerVcIaRfid.Maui.Rfid`):
+
+```csharp
+builder.Services.AddSingleton<IRfidReaderService, RfidReaderService>();
+
+if (_rfid.IsAvailable)
+{
+    _rfid.Initialize();
+    _rfid.TagsRead += (s, e) => _inventory.UnionWith(e.Tags.Select(t => t.Epc)); // main thread
+    _rfid.StartInventory();
+}
+```
+
+**Flutter** (`scanner_vc_ia_rfid_rfid`):
+
+```dart
+final rfid = ScannerVcIaRfidRfid.instance;
+if (await rfid.isAvailable()) {
+  _subscription = rfid.onTagsRead.listen((tags) => _inventory.addAll(tags.map((t) => t.epc)));
+  await rfid.startInventory();
+}
+```
+
+Exemplos em [`dotnet/ScannerVcIaRfid.Maui.Sample`](dotnet/ScannerVcIaRfid.Maui.Sample) e [`flutter/scanner_vc_ia_rfid_rfid/example`](flutter/scanner_vc_ia_rfid_rfid/example).
+
 ---
 
 ## Origem dos dados de leitura (`sourceEngine`)
@@ -362,6 +399,7 @@ Exemplos em [`dotnet/ScannerVcIaRfid.Maui.Sample`](dotnet/ScannerVcIaRfid.Maui.S
 | `Generic_Intent` | Leitor de Intent genérico (`createGeneric` / `UseGenericIntent` / `useGenericIntent`) |
 | `MLKit_Barcode` | Código de barras lido pela câmera (CameraX + ML Kit Barcode Scanning) |
 | `Google_CodeScanner` | Código de barras lido pela tela do Google Code Scanner |
+| `Zebra_DataWedge_RFID` | Tag RFID UHF lida pelo plugin RFID Input do DataWedge (`RfidTag.sourceEngine`) |
 | `MLKit_OCR` | Texto lido pela câmera (CameraX + ML Kit Text Recognition). `value` é um JSON com `fullText` e `blocks` |
 
 A câmera não envia um resultado a cada frame. Um valor igual ao anterior só é enviado de novo depois de 1,5 s fora do quadro. No OCR, o intervalo mínimo entre dois resultados é de 1 s.

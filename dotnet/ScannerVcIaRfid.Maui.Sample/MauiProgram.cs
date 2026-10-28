@@ -1,12 +1,14 @@
 using Microsoft.Extensions.Logging;
 using ScannerVcIaRfid.Maui.Controls;
 using ScannerVcIaRfid.Maui.Nfc.Services;
+using ScannerVcIaRfid.Maui.Rfid.Services;
 using ScannerVcIaRfid.Maui.Services;
 
 #if ANDROID
 using ScannerVcIaRfid.Maui.Platforms.Android.Handlers;
 using ScannerVcIaRfid.Maui.Nfc.Platforms.Android.Services;
 using ScannerVcIaRfid.Maui.Platforms.Android.Services;
+using ScannerVcIaRfid.Maui.Rfid.Platforms.Android.Services;
 #endif
 
 namespace ScannerVcIaRfid.Maui.Sample;
@@ -34,6 +36,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<IHardwareScannerService, HardwareScannerService>();
         builder.Services.AddSingleton<ICodeScannerService, CodeScannerService>();
         builder.Services.AddSingleton<INfcService, NfcService>();
+        builder.Services.AddSingleton<IRfidReaderService, RfidReaderService>();
 #endif
 
         builder.Services.AddTransient<MainPage>();

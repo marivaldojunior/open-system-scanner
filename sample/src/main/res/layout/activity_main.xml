@@ -55,6 +55,20 @@
         android:gravity="center"
         android:text="Aproxime uma tag NFC" />
 
+    <Button
+        android:id="@+id/rfidInventoryButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Iniciar inventário RFID" />
+
+    <TextView
+        android:id="@+id/rfidText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="RFID: 0 tags" />
+
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

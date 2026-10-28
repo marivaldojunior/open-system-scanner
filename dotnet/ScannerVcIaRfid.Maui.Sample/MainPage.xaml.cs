@@ -4,6 +4,8 @@ using ScannerVcIaRfid.Maui.Controls;
 using ScannerVcIaRfid.Maui.Models;
 using ScannerVcIaRfid.Maui.Nfc.Models;
 using ScannerVcIaRfid.Maui.Nfc.Services;
+using ScannerVcIaRfid.Maui.Rfid.Models;
+using ScannerVcIaRfid.Maui.Rfid.Services;
 using ScannerVcIaRfid.Maui.Services;
 
 namespace ScannerVcIaRfid.Maui.Sample;
@@ -13,14 +15,22 @@ public partial class MainPage : ContentPage
     private readonly IHardwareScannerService _hardwareScanner;
     private readonly ICodeScannerService _codeScanner;
     private readonly INfcService _nfc;
+    private readonly IRfidReaderService _rfid;
+    private readonly HashSet<string> _inventoryEpcs = [];
+    private bool _inventoryRunning;
 
-    public MainPage(IHardwareScannerService hardwareScanner, ICodeScannerService codeScanner, INfcService nfc)
+    public MainPage(
+        IHardwareScannerService hardwareScanner,
+        ICodeScannerService codeScanner,
+        INfcService nfc,
+        IRfidReaderService rfid)
     {
         InitializeComponent();
 
         _hardwareScanner = hardwareScanner;
         _codeScanner = codeScanner;
         _nfc = nfc;
+        _rfid = rfid;
     }
 
     protected override async void OnAppearing()
@@ -39,6 +49,18 @@ public partial class MainPage : ContentPage
 
         CameraScannerView.Scanned += OnCameraScanned;
         CameraScannerView.ScanError += OnCameraScanError;
+
+        if (_rfid.IsAvailable)
+        {
+            _rfid.Initialize();
+            _rfid.TagsRead += OnRfidTagsRead;
+            _rfid.RfidError += OnRfidError;
+        }
+        else
+        {
+            RfidInventoryButton.IsEnabled = false;
+            RfidLabel.Text = "Este aparelho não tem leitor RFID suportado.";
+        }
 
         // NFC nao precisa de permissao em runtime (permissao normal).
         if (_nfc.IsSupported)
@@ -101,6 +123,14 @@ public partial class MainPage : ContentPage
         _nfc.TagRead -= OnNfcTagRead;
         _nfc.NfcError -= OnNfcError;
         _nfc.Stop();
+
+        if (_inventoryRunning)
+        {
+            _rfid.StopInventory();
+            SetInventoryRunning(false);
+        }
+        _rfid.TagsRead -= OnRfidTagsRead;
+        _rfid.RfidError -= OnRfidError;
 
         // Release() nao e chamado aqui de proposito: o leitor de hardware e
         // um Singleton compartilhado pelo app inteiro. Desregistrar o
@@ -174,6 +204,40 @@ public partial class MainPage : ContentPage
     {
         MainThread.BeginInvokeOnMainThread(() => LastNfcLabel.Text = e.Message);
     }
+
+    private void OnRfidInventoryClicked(object? sender, EventArgs e)
+    {
+        if (_inventoryRunning)
+        {
+            _rfid.StopInventory();
+        }
+        else
+        {
+            _inventoryEpcs.Clear();
+            _rfid.StartInventory();
+        }
+
+        SetInventoryRunning(!_inventoryRunning);
+    }
+
+    private void SetInventoryRunning(bool running)
+    {
+        _inventoryRunning = running;
+        RfidInventoryButton.Text = running ? "Parar inventário RFID" : "Iniciar inventário RFID";
+    }
+
+    // Disparado na main thread (RfidTagBuffer nativo).
+    private void OnRfidTagsRead(object? sender, RfidTagsEventArgs e)
+    {
+        foreach (var tag in e.Tags)
+        {
+            _inventoryEpcs.Add(tag.Epc);
+        }
+
+        RfidLabel.Text = $"RFID: {_inventoryEpcs.Count} tags (última: {e.Tags[^1].Epc})";
+    }
+
+    private void OnRfidError(object? sender, RfidErrorEventArgs e) => RfidLabel.Text = e.Message;
 
     private void HandleScanError(string message)
     {

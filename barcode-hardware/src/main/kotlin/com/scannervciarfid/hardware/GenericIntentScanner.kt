@@ -25,6 +25,10 @@ open class GenericIntentScanner @JvmOverloads constructor(
 
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
+            if (!accepts(intent)) {
+                return
+            }
+
             val data = intent.getStringExtra(dataExtraKey)
             if (data.isNullOrEmpty()) {
                 scannerListener?.onScanError(
@@ -60,6 +64,12 @@ open class GenericIntentScanner @JvmOverloads constructor(
      * broadcast (ex.: label_type do DataWedge). O padrao e "UNKNOWN".
      */
     protected open fun readFormat(intent: Intent): String = "UNKNOWN"
+
+    /**
+     * Ponto de extensao para descartar broadcasts com a mesma action que nao
+     * sao leituras de codigo de barras (ex.: tags RFID do DataWedge).
+     */
+    protected open fun accepts(intent: Intent): Boolean = true
 
     /**
      * Ponto de extensao para adapters que precisam configurar o servico do

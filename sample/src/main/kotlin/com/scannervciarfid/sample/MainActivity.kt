@@ -16,6 +16,10 @@ import com.scannervciarfid.hardware.HardwareScannerFactory
 import com.scannervciarfid.nfc.NfcTagData
 import com.scannervciarfid.nfc.NfcTagListener
 import com.scannervciarfid.nfc.NfcTagReader
+import com.scannervciarfid.rfid.RfidListener
+import com.scannervciarfid.rfid.RfidReader
+import com.scannervciarfid.rfid.RfidReaderFactory
+import com.scannervciarfid.rfid.RfidTag
 import com.scannervciarfid.sample.databinding.ActivityMainBinding
 import com.scannervciarfid.vision.VisionScannerView
 import com.scannervciarfid.vision.barcode.BarcodeEngine
@@ -36,6 +40,23 @@ class MainActivity : ComponentActivity() {
     private var cameraScannerView: VisionScannerView? = null
     private var ocrEnabled = false
     private val nfcTagReader = NfcTagReader()
+
+    // null em aparelhos sem leitor RFID suportado.
+    private val rfidReader: RfidReader? = RfidReaderFactory.create()
+    private val inventoryEpcs = mutableSetOf<String>()
+    private var inventoryRunning = false
+
+    // Callbacks na main thread (RfidTagBuffer).
+    private val rfidListener = object : RfidListener {
+        override fun onTagsRead(tags: Array<RfidTag>) {
+            tags.forEach { inventoryEpcs.add(it.epc) }
+            binding.rfidText.text = "RFID: ${inventoryEpcs.size} tags (última: ${tags.last().epc})"
+        }
+
+        override fun onRfidError(error: String) {
+            binding.rfidText.text = error
+        }
+    }
 
     private val nfcTagListener = object : NfcTagListener {
         override fun onTagRead(tag: NfcTagData) {
@@ -84,6 +105,11 @@ class MainActivity : ComponentActivity() {
         binding.activateCameraButton.setOnClickListener { onActivateCameraClicked() }
         binding.switchEngineButton.setOnClickListener { onSwitchEngineClicked() }
         binding.codeScannerButton.setOnClickListener { onCodeScannerClicked() }
+        binding.rfidInventoryButton.setOnClickListener { onRfidInventoryClicked() }
+        binding.rfidInventoryButton.isEnabled = rfidReader != null
+        if (rfidReader == null) {
+            binding.rfidText.text = "Este aparelho não tem leitor RFID suportado."
+        }
     }
 
     override fun onStart() {
@@ -95,6 +121,11 @@ class MainActivity : ComponentActivity() {
         hardwareScanner.initialize(applicationContext)
         hardwareScanner.setScannerListener(scannerListener)
         hardwareScanner.start()
+
+        rfidReader?.let {
+            it.initialize(applicationContext)
+            it.setRfidListener(rfidListener)
+        }
 
         if (NfcTagReader.isSupported(this)) {
             nfcTagReader.setNfcTagListener(nfcTagListener)
@@ -112,6 +143,15 @@ class MainActivity : ComponentActivity() {
 
         nfcTagReader.stop()
         nfcTagReader.setNfcTagListener(null)
+
+        rfidReader?.let {
+            if (inventoryRunning) {
+                it.stopInventory()
+                setInventoryRunning(false)
+            }
+            it.setRfidListener(null)
+            it.release()
+        }
 
         // VisionScannerView nao expoe um stopCamera() publico - remover a
         // view da arvore aciona onDetachedFromWindow(), que ja faz
@@ -177,6 +217,23 @@ class MainActivity : ComponentActivity() {
 
             override fun onScanError(error: String) = scannerListener.onScanError(error)
         })
+    }
+
+    private fun onRfidInventoryClicked() {
+        val reader = rfidReader ?: return
+        if (inventoryRunning) {
+            reader.stopInventory()
+        } else {
+            inventoryEpcs.clear()
+            reader.startInventory()
+        }
+        setInventoryRunning(!inventoryRunning)
+    }
+
+    private fun setInventoryRunning(running: Boolean) {
+        inventoryRunning = running
+        binding.rfidInventoryButton.text =
+            if (running) "Parar inventário RFID" else "Iniciar inventário RFID"
     }
 
     private fun hideCamera() {

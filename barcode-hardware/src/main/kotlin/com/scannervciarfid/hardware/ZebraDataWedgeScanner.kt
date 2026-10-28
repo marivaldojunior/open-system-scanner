@@ -19,6 +19,11 @@ class ZebraDataWedgeScanner : GenericIntentScanner(
 
     override val sourceEngine: String = "Zebra_DataWedge"
 
+    // O modulo rfid (ZebraDataWedgeRfidReader) usa o mesmo perfil e a mesma
+    // action: as tags RFID chegam aqui com source "rfid" e sao descartadas.
+    override fun accepts(intent: Intent): Boolean =
+        intent.getStringExtra(EXTRA_DATAWEDGE_SOURCE) != SOURCE_RFID
+
     // O DataWedge envia a simbologia como "LABEL-TYPE-EAN13", "LABEL-TYPE-QRCODE"...
     override fun readFormat(intent: Intent): String =
         intent.getStringExtra(EXTRA_DATAWEDGE_LABEL_TYPE)?.removePrefix(LABEL_TYPE_PREFIX) ?: "UNKNOWN"
@@ -76,6 +81,8 @@ class ZebraDataWedgeScanner : GenericIntentScanner(
         private const val ACTION_SCAN_OUTPUT = "com.scannervciarfid.zebra.SCAN"
         private const val EXTRA_DATAWEDGE_DATA_STRING = "com.symbol.datawedge.data_string"
         private const val EXTRA_DATAWEDGE_LABEL_TYPE = "com.symbol.datawedge.label_type"
+        private const val EXTRA_DATAWEDGE_SOURCE = "com.symbol.datawedge.source"
+        private const val SOURCE_RFID = "rfid"
         private const val LABEL_TYPE_PREFIX = "LABEL-TYPE-"
 
         private const val DATAWEDGE_PACKAGE = "com.symbol.datawedge"

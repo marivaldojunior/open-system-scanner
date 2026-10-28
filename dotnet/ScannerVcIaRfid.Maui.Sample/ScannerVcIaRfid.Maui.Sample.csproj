@@ -32,6 +32,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
     <ProjectReference Include="..\ScannerVcIaRfid.Maui\ScannerVcIaRfid.Maui.csproj" />
     <ProjectReference Include="..\ScannerVcIaRfid.Maui.Nfc\ScannerVcIaRfid.Maui.Nfc.csproj" />
+    <ProjectReference Include="..\ScannerVcIaRfid.Maui.Rfid\ScannerVcIaRfid.Maui.Rfid.csproj" />
   </ItemGroup>
 
 </Project>

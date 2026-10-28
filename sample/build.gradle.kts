@@ -53,6 +53,7 @@ dependencies {
     implementation(project(":vision-ocr"))
     implementation(project(":code-scanner"))
     implementation(project(":nfc"))
+    implementation(project(":rfid"))
 
     implementation(libs.androidx.core.ktx)
     // Necessario para ComponentActivity.registerForActivityResult(...)

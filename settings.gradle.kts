@@ -27,6 +27,7 @@ rootProject.name = "scanner-vc-ia-rfid"
 //   vision-ocr       -> motor de OCR (ML Kit Text Recognition)
 //   code-scanner     -> Google Code Scanner (sem permissao de camera, exige Play Services)
 //   nfc              -> leitura de tags NFC/HF (Reader Mode do Android)
+//   rfid             -> contrato de leitores RFID UHF + leitor via DataWedge (Zebra)
 include(":core")
 include(":barcode-hardware")
 include(":vision")
@@ -34,6 +35,7 @@ include(":vision-barcode")
 include(":vision-ocr")
 include(":code-scanner")
 include(":nfc")
+include(":rfid")
 
 // ":sample" e um app Android puro que consome os modulos via project(...) -
 // mesmo build Gradle, sempre em sincronia com o codigo-fonte atual.
