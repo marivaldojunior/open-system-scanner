@@ -21,6 +21,15 @@
     <SupportedOSPlatformVersion>26.0</SupportedOSPlatformVersion>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <!-- SDK Zebra RFID API3 (opcional, em libs/): exige Android 10 (API 29). -->
+    <ZebraRfidSdkFiles>$([System.IO.Directory]::GetFiles('$(MSBuildThisFileDirectory)..\..\libs', 'rfidapi3lib-*.aar'))</ZebraRfidSdkFiles>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(TargetFramework.Contains('-android')) And '$(ZebraRfidSdkFiles)' != ''">
+    <SupportedOSPlatformVersion>29.0</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
   <ItemGroup>
     <!--
       Sem MauiIcon/MauiSplashScreen/MauiImage/MauiFont propositalmente - este

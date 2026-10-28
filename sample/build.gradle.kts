@@ -6,14 +6,20 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
+// SDK Zebra RFID API3 (proprietario, opcional): libs/rfidapi3lib-<versao>.aar.
+val zebraRfidSdk = rootProject.file("libs").listFiles()
+    ?.filter { it.name.startsWith("rfidapi3lib-") && it.name.endsWith(".aar") }
+    ?.maxByOrNull { it.name }
+
 android {
     namespace = "com.scannervciarfid.sample"
     compileSdk = 36
 
     defaultConfig {
         applicationId = "com.scannervciarfid.sample"
-        // 26 por causa do modulo ai-language (ML Kit Entity Extraction).
-        minSdk = 26
+        // 26 por causa do modulo ai-language (ML Kit Entity Extraction); 29
+        // quando o SDK Zebra RFID API3 esta em libs/ (modulo rfid-zebra).
+        minSdk = if (zebraRfidSdk != null) 29 else 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -55,6 +61,12 @@ dependencies {
     implementation(project(":code-scanner"))
     implementation(project(":nfc"))
     implementation(project(":rfid"))
+    // So com o SDK Zebra RFID API3 em libs/. O modulo rfid-zebra declara o SDK
+    // como compileOnly: o app adiciona o .aar do SDK por conta propria.
+    if (zebraRfidSdk != null) {
+        implementation(project(":rfid-zebra"))
+        implementation(files(zebraRfidSdk))
+    }
     implementation(project(":ai-language"))
     implementation(project(":vision-objects"))
     implementation(project(":vision-labels"))

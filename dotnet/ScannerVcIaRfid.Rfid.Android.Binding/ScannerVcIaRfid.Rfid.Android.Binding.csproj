@@ -12,21 +12,32 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Modulo nativo rfid. Gere com `./gradlew exportMauiAars` na raiz do
-         repositorio - ver Jars/README.md. -->
+    <!-- Modulos nativos rfid e rfid-zebra (este so com o SDK Zebra em libs/).
+         Gere com `./gradlew exportMauiAars` na raiz do repositorio - ver
+         Jars/README.md. -->
     <AndroidLibrary Include="Jars\*.aar" />
+
+    <!--
+      SDK Zebra RFID API3 (proprietario, fora do Git): o modulo rfid-zebra so
+      declara o SDK como compileOnly, entao o .aar do SDK entra aqui para
+      chegar ao app. Bind="false": o C# nunca chama o SDK direto, so o
+      RfidReaderFactory. Sem o SDK em libs/, o glob nao encontra nada e o
+      pacote usa o leitor DataWedge.
+    -->
+    <AndroidLibrary Include="..\..\libs\rfidapi3lib-*.aar" Bind="false" />
   </ItemGroup>
 
   <ItemGroup>
     <!--
-      Dependencias do modulo rfid: Kotlin stdlib e AndroidX Core
-      (ContextCompat.registerReceiver). O SDK RFID de fabricante (Zebra API3,
-      Chainway...) nao entra aqui - ele vai na binding do modulo do SDK.
+      Dependencias dos modulos rfid e rfid-zebra: Kotlin stdlib, AndroidX
+      Core (ContextCompat.registerReceiver) e LocalBroadcastManager (usado
+      pelo SDK Zebra, que nao o embute).
     -->
     <PackageReference Include="Xamarin.Kotlin.StdLib" Version="2.4.0.1" />
     <!-- Mesma versao que o MAUI 10 ja traz: uma versao maior puxa um Lifecycle
          mais novo que o do MAUI (avisos NU1608). O modulo exige >= 1.13.1. -->
     <PackageReference Include="Xamarin.AndroidX.Core" Version="1.16.0.3" />
+    <PackageReference Include="Xamarin.AndroidX.LocalBroadcastManager" Version="1.1.0.25" />
   </ItemGroup>
 
 </Project>

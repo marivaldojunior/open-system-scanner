@@ -71,6 +71,7 @@ flowchart TB
 | `code-scanner` | `GoogleCodeScanner` (leitura única, sem permissão de câmera) | `core`, Google Play Services |
 | `nfc` | `NfcTagReader` (Reader Mode: UID, tecnologias, registros NDEF) | — (só `android.nfc`) |
 | `rfid` | `RfidReader`, `RfidTagBuffer` (lotes), `ZebraDataWedgeRfidReader`, `RfidReaderFactory` | AndroidX Core |
+| `rfid-zebra` (opcional) | `ZebraApi3RfidReader` (SDK Zebra RFID API3) — **minSdk 29**, só entra no build com o SDK em `libs/` | `rfid`, SDK Zebra (`compileOnly`), LocalBroadcastManager |
 | `ai-language` | `LanguageAiClient` (idioma, tradução, extração de entidades) — **minSdk 26** | ML Kit Language ID, Translate, Entity Extraction |
 | `vision-objects` | `ObjectDetectionEngine` (id `"objects"`) | `vision`, ML Kit Object Detection |
 | `vision-labels` | `ImageLabelingEngine` (id `"labels"`) | `vision`, ML Kit Image Labeling |
@@ -128,6 +129,7 @@ scanner-vc-ia-rfid/
 ├── code-scanner/                          # GoogleCodeScanner (Play Services)
 ├── nfc/                                   # NfcTagReader (Reader Mode)
 ├── rfid/                                  # Contrato RFID UHF + leitor via DataWedge
+├── rfid-zebra/                            # Leitor pelo SDK Zebra RFID API3 (opcional)
 ├── ai-language/                           # IA de linguagem on-device (ML Kit)
 ├── vision-objects/                        # ObjectDetectionEngine
 ├── vision-labels/                         # ImageLabelingEngine
@@ -178,7 +180,7 @@ Cada domínio tem o próprio pacote MAUI (com a própria binding) e o próprio p
 |---|---|---|---|
 | Código de barras e câmera | `core`, `barcode-hardware`, `vision`, `vision-barcode`, `vision-ocr`, `code-scanner` | `ScannerVcIaRfid.Maui` | `scanner_vc_ia_rfid_flutter` |
 | NFC | `nfc` | `ScannerVcIaRfid.Maui.Nfc` | `scanner_vc_ia_rfid_nfc` |
-| RFID UHF | `rfid` | `ScannerVcIaRfid.Maui.Rfid` | `scanner_vc_ia_rfid_rfid` |
+| RFID UHF | `rfid`, `rfid-zebra` (opcional) | `ScannerVcIaRfid.Maui.Rfid` | `scanner_vc_ia_rfid_rfid` |
 | IA de linguagem | `ai-language` | `ScannerVcIaRfid.Maui.Ai` | `scanner_vc_ia_rfid_ai` |
 | Motores extras de visão (complemento) | `vision-objects`, `vision-labels`, `vision-faces` | `ScannerVcIaRfid.Maui.VisionExtras` | `scanner_vc_ia_rfid_vision_extras` |
 
@@ -365,10 +367,36 @@ Exemplos em [`dotnet/ScannerVcIaRfid.Maui.Sample`](dotnet/ScannerVcIaRfid.Maui.S
 
 O leitor entrega as tags **em lotes** (`RfidTagBuffer`, janela de 100 ms): cada EPC aparece uma vez por lote, com o número de leituras e o maior RSSI. Para um inventário de tags únicas, guarde os EPCs num conjunto no app.
 
-Hoje existe um leitor: `ZebraDataWedgeRfidReader`, pelo plugin "RFID Input" do DataWedge (MC3300R, RFD40, RFD90, TC53E, EM45, ET6X). Ele usa o mesmo perfil DataWedge do leitor de código de barras e separa as leituras pelo extra `com.symbol.datawedge.source`. O gatilho físico já dispara o inventário; `startInventory()`/`stopInventory()` usam o `SOFT_RFID_TRIGGER` (o `STOP_SCANNING` exige DataWedge 11.3+).
+Existem dois leitores Zebra. O `RfidReaderFactory.create()` escolhe sozinho, e o código do app não muda:
+
+| Leitor | Quando é usado | Entrega |
+|---|---|---|
+| `ZebraApi3RfidReader` (módulo `rfid-zebra`) | O app tem o módulo `rfid-zebra` e o SDK Zebra RFID API3 | EPC, RSSI e contagem de leituras |
+| `ZebraDataWedgeRfidReader` (módulo `rfid`) | Nos outros casos, em aparelhos Zebra | Só o EPC |
+
+**Leitor DataWedge.** Usa o plugin "RFID Input" do DataWedge (MC3300R, RFD40, RFD90, TC53E, EM45, ET6X). Ele divide o perfil DataWedge com o leitor de código de barras e separa as leituras pelo extra `com.symbol.datawedge.source`. O gatilho físico dispara o inventário; `startInventory()`/`stopInventory()` usam o `SOFT_RFID_TRIGGER` (o `STOP_SCANNING` exige DataWedge 11.3+).
+
+**Leitor SDK Zebra RFID API3.** Conecta ao primeiro leitor encontrado, na ordem do sample oficial: `RE_SERIAL` (sled acoplado), `SERVICE_SERIAL` e `QC_SERIAL` (leitor embutido), `SERVICE_USB` e, por último, `BLUETOOTH`. O gatilho físico inicia e para o inventário. Testado só em compilação contra o SDK 2.0.5.297.
+
+O SDK é proprietário: ele não fica no Git e não é publicado com o módulo (`compileOnly`). Para usar:
+
+1. Baixe o "Zebra RFID SDK for Android" no [portal da Zebra](https://www.zebra.com/us/en/support-downloads/software/developer-tools/rfid-sdk-for-android.html) (exige login).
+2. Copie `rfidapi3lib-<versão>.aar` para `libs/`, sem renomear. O `rfidapi3ziotcllrplib-<versão>.aar` é para leitores fixos (FX/ZIOTC) e não é usado.
+3. Rode `./gradlew publish exportMauiAars`. Com o SDK em `libs/`, o módulo `rfid-zebra` entra no build.
+4. Configure o app:
+   - `minSdk` 29 (Android 10), exigido pelo SDK.
+   - `tools:replace` no `<application>` do `AndroidManifest.xml`: o SDK declara `android:label` e `android:allowBackup`. Substitua os atributos que o app também declara (ex.: `tools:replace="android:allowBackup,android:label"`).
+   - Permissão `BLUETOOTH_CONNECT` em runtime, se o leitor for um sled Bluetooth.
+
+> [!WARNING]
+> Inclua o `.aar` do SDK no app. O módulo `rfid-zebra` só o usa para compilar. Sem o SDK no app, a fábrica não encontra a classe `com.zebra.rfid.api3.Readers` e volta para o leitor DataWedge.
+
+- **App nativo:** `implementation(project(":rfid-zebra"))` e `implementation(files("libs/rfidapi3lib-<versão>.aar"))` (ver [`sample/build.gradle.kts`](sample/build.gradle.kts)).
+- **MAUI:** a binding `ScannerVcIaRfid.Rfid.Android.Binding` inclui o `rfid-zebra` e o SDK de `libs/` (`Bind="false"`) quando eles existem. O app só precisa de `<SupportedOSPlatformVersion>29.0</SupportedOSPlatformVersion>` e do `tools:replace`.
+- **Flutter:** defina `scannerVcIaRfidZebraApi3=true` no `android/gradle.properties` do app e adicione o SDK em `android/app/build.gradle.kts`: `implementation(files("<caminho>/rfidapi3lib-<versão>.aar"))`.
 
 > [!IMPORTANT]
-> O DataWedge só entrega o EPC: sem RSSI, sem leitura/gravação de bancos de memória, sem lock/kill e sem localização. Essas operações exigem o SDK do fabricante (Zebra RFID API3, Chainway, Urovo...). Cada SDK entra como um módulo próprio que implementa `RfidReader`.
+> Leitura e gravação de bancos de memória, lock/kill, localização por RSSI e ajuste de potência ainda não estão no contrato `RfidReader`. O SDK API3 suporta essas operações; elas entram numa próxima etapa.
 
 **MAUI** (`ScannerVcIaRfid.Maui.Rfid`):
 
@@ -476,6 +504,7 @@ Exemplos em [`dotnet/ScannerVcIaRfid.Maui.Sample`](dotnet/ScannerVcIaRfid.Maui.S
 | `Google_CodeScanner` | Código de barras lido pela tela do Google Code Scanner |
 | `MLKit_Objects` / `MLKit_Labels` / `MLKit_Faces` | Motores extras de visão (ver acima) |
 | `Zebra_DataWedge_RFID` | Tag RFID UHF lida pelo plugin RFID Input do DataWedge (`RfidTag.sourceEngine`) |
+| `Zebra_RFID_API3` | Tag RFID UHF lida pelo SDK Zebra RFID API3, com RSSI (`RfidTag.sourceEngine`) |
 | `MLKit_OCR` | Texto lido pela câmera (CameraX + ML Kit Text Recognition). `value` é um JSON com `fullText` e `blocks` |
 
 A câmera não envia um resultado a cada frame. Um valor igual ao anterior só é enviado de novo depois de 1,5 s fora do quadro. No OCR, o intervalo mínimo entre dois resultados é de 1 s.
@@ -497,7 +526,8 @@ A câmera não envia um resultado a cada frame. Um valor igual ao anterior só �
 | Componente | Versão mínima |
 |---|---|
 | `compileSdk` (módulos nativos) | 36 |
-| `minSdk` (módulos nativos) | 24 (26 no `ai-language`) |
+| `minSdk` (módulos nativos) | 24 (26 no `ai-language`, 29 no `rfid-zebra`) |
+| SDK Zebra RFID API3 (opcional) | 2.0.5.297 |
 | Android Gradle Plugin | 9.3.1 |
 | CameraX | 1.6.1 |
 | Google ML Kit Barcode Scanning | 17.3.0 |

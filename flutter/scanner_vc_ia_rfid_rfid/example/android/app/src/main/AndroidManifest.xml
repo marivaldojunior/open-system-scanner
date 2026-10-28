@@ -1,6 +1,13 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- O <queries> do DataWedge chega pelo merge do manifesto do modulo nativo rfid. -->
+    <!--
+        tools:replace: o SDK Zebra RFID API3 (opt-in scannerVcIaRfidZebraApi3)
+        declara android:label no proprio <application>. Sem o replace, o merge
+        do manifesto falha quando o SDK esta no app.
+    -->
     <application
+        tools:replace="android:label"
         android:label="ScannerVcIaRfid RFID"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">

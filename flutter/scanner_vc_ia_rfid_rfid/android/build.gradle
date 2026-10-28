@@ -38,12 +38,18 @@ rootProject.allprojects {
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
+// Opcional: leitor pelo SDK Zebra RFID API3 (modulo rfid-zebra), com RSSI e
+// sem DataWedge. Ative com scannerVcIaRfidZebraApi3=true no gradle.properties
+// do app. O SDK exige minSdk 29, e o app adiciona o .aar do SDK (licenca da
+// Zebra) - ver README, secao RFID UHF.
+def zebraApi3Enabled = (project.findProperty('scannerVcIaRfidZebraApi3') ?: 'false').toString().toBoolean()
+
 android {
     namespace 'com.scannervciarfid.flutter.rfid'
     compileSdk 36
 
     defaultConfig {
-        minSdk 24
+        minSdk zebraApi3Enabled ? 29 : 24
     }
 
     compileOptions {
@@ -62,4 +68,10 @@ def scannerVcIaRfidVersion = '0.1.0'
 dependencies {
     // O POM do modulo rfid lista as proprias dependencias - nao repita aqui.
     implementation "com.scannervciarfid:rfid:$scannerVcIaRfidVersion"
+
+    // O RfidReaderFactory encontra o leitor API3 por reflection: nenhuma
+    // mudanca no codigo do plugin.
+    if (zebraApi3Enabled) {
+        implementation "com.scannervciarfid:rfid-zebra:$scannerVcIaRfidVersion"
+    }
 }

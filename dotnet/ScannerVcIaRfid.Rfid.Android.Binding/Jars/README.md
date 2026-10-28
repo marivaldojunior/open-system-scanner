@@ -1,6 +1,7 @@
 # Jars/
 
-Coloque aqui o `.aar` do módulo nativo `rfid`. Na raiz do repositório, rode:
+Coloque aqui os `.aar` dos módulos nativos `rfid` e `rfid-zebra` (este só com
+o SDK Zebra em `libs/`). Na raiz do repositório, rode:
 
 ```bash
 ./gradlew exportMauiAars

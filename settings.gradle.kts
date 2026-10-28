@@ -45,6 +45,16 @@ include(":vision-objects")
 include(":vision-labels")
 include(":vision-faces")
 
+// rfid-zebra usa o SDK Zebra RFID API3, que e proprietario e nao vem no
+// repositorio (ver libs/README.md). O modulo so entra no build quando o SDK
+// (libs/rfidapi3lib-<versao>.aar) existe - sem ele, o resto do projeto
+// compila normalmente.
+val zebraRfidSdkPresent = file("libs").listFiles()
+    ?.any { it.name.startsWith("rfidapi3lib-") && it.name.endsWith(".aar") } == true
+if (zebraRfidSdkPresent) {
+    include(":rfid-zebra")
+}
+
 // ":sample" e um app Android puro que consome os modulos via project(...) -
 // mesmo build Gradle, sempre em sincronia com o codigo-fonte atual.
 include(":sample")

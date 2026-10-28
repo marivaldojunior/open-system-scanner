@@ -29,17 +29,21 @@ class RfidTagBuffer @JvmOverloads constructor(
         this.listener = listener
     }
 
+    /**
+     * [readCount] serve para SDKs que ja agrupam leituras (ex.: tagSeenCount
+     * da Zebra API3).
+     */
     @JvmOverloads
-    fun add(epc: String, rssi: Int = RfidTag.RSSI_UNKNOWN) {
+    fun add(epc: String, rssi: Int = RfidTag.RSSI_UNKNOWN, readCount: Int = 1) {
         val key = epc.uppercase()
         synchronized(pending) {
             val previous = pending[key]
             pending[key] = if (previous == null) {
-                RfidTag(key, rssi, 1, sourceEngine)
+                RfidTag(key, rssi, readCount, sourceEngine)
             } else {
                 previous.copy(
                     rssi = maxOf(previous.rssi, rssi),
-                    readCount = previous.readCount + 1
+                    readCount = previous.readCount + readCount
                 )
             }
             if (!flushScheduled) {

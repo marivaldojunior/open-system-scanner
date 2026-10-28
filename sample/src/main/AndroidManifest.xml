@@ -1,14 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!--
-        A biblioteca (src/main/AndroidManifest.xml, raiz do repo) ja declara
+        O modulo vision (vision/src/main/AndroidManifest.xml) ja declara
         esta mesma permissao e ela chegaria aqui via manifest merge do AGP -
         repetimos explicitamente por clareza, mesmo padrao do sample MAUI.
     -->
     <uses-permission android:name="android.permission.CAMERA" />
 
+    <!--
+        tools:replace: o SDK Zebra RFID API3 declara allowBackup e label no
+        proprio <application>. Sem o replace, o merge do manifesto falha
+        quando o SDK esta no app (modulo rfid-zebra).
+    -->
     <application
+        tools:replace="android:allowBackup,android:label"
         android:allowBackup="true"
         android:label="ScannerVcIaRfid Sample"
         android:icon="@android:drawable/sym_def_app_icon"

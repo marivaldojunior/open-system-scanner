@@ -16,13 +16,15 @@ plugins {
 
 // Cada binding .NET MAUI empacota so os .aar do seu dominio - um app MAUI
 // que so usa NFC nao leva CameraX nem ML Kit. Todo modulo de biblioteca
-// precisa aparecer em exatamente uma binding.
+// precisa aparecer em exatamente uma binding. Modulos condicionais (ex.:
+// rfid-zebra, que exige o SDK proprietario em libs/) sao pulados quando nao
+// estao no build.
 val mauiBindings = mapOf(
     "ScannerVcIaRfid.Android.Binding" to listOf(
         "core", "barcode-hardware", "vision", "vision-barcode", "vision-ocr", "code-scanner"
     ),
     "ScannerVcIaRfid.Nfc.Android.Binding" to listOf("nfc"),
-    "ScannerVcIaRfid.Rfid.Android.Binding" to listOf("rfid"),
+    "ScannerVcIaRfid.Rfid.Android.Binding" to listOf("rfid", "rfid-zebra"),
     "ScannerVcIaRfid.Ai.Android.Binding" to listOf("ai-language"),
     "ScannerVcIaRfid.VisionExtras.Android.Binding" to listOf("vision-objects", "vision-labels", "vision-faces")
 )
@@ -92,7 +94,7 @@ tasks.register<Copy>("exportMauiAars") {
     description = "Gera os .aar release e copia para as bindings .NET MAUI."
 
     mauiBindings.forEach { (binding, modules) ->
-        modules.forEach { module ->
+        modules.filter { findProject(":$it") != null }.forEach { module ->
             dependsOn(":$module:assembleRelease")
             from(file("$module/build/outputs/aar/$module-release.aar")) {
                 rename { "scanner-vc-ia-rfid-$module.aar" }

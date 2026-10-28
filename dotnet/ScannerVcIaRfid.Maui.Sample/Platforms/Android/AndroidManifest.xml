@@ -1,6 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <application android:allowBackup="true" android:supportsRtl="true" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!--
+        tools:replace: o SDK Zebra RFID API3 declara allowBackup e label no
+        proprio <application>. Sem o replace, o merge do manifesto falha
+        quando o SDK esta no app.
+    -->
+    <application
+        tools:replace="android:allowBackup,android:label"
+        android:allowBackup="true"
+        android:supportsRtl="true" />
 
     <!--
         A biblioteca nativa (src/main/AndroidManifest.xml) ja declara esta
