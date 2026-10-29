@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
+    <AndroidClassParser>class-parse</AndroidClassParser>
+    <AndroidCodegenTarget>XAJavaInterop1</AndroidCodegenTarget>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>ScannerVcIaRfid.OcrScripts.Android.Binding</RootNamespace>
+    <AssemblyName>ScannerVcIaRfid.OcrScripts.Android.Binding</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Modulos nativos vision-ocr-chinese, -japanese, -korean e -devanagari.
+         Gere com `./gradlew exportMauiAars` na raiz do repositorio - ver
+         Jars/README.md. -->
+    <AndroidLibrary Include="Jars\*.aar" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Os motores usam o OcrTextEngine (modulo vision-ocr) e o
+         VisionEngineRegistry (modulo vision), que ja estao na binding principal. -->
+    <ProjectReference Include="..\ScannerVcIaRfid.Android.Binding\ScannerVcIaRfid.Android.Binding.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Versoes alinhadas com gradle/libs.versions.toml (prefixo "1" do NuGet). -->
+    <PackageReference Include="Xamarin.Google.MLKit.TextRecognition.Chinese" Version="116.0.1.*" />
+    <PackageReference Include="Xamarin.Google.MLKit.TextRecognition.Japanese" Version="116.0.1.*" />
+    <PackageReference Include="Xamarin.Google.MLKit.TextRecognition.Korean" Version="116.0.1.*" />
+    <PackageReference Include="Xamarin.Google.MLKit.TextRecognition.Devanagari" Version="116.0.1.*" />
+  </ItemGroup>
+
+</Project>

@@ -77,6 +77,7 @@ flowchart TB
 | `vision-objects` | `ObjectDetectionEngine` (id `"objects"`) | `vision`, ML Kit Object Detection |
 | `vision-labels` | `ImageLabelingEngine` (id `"labels"`) | `vision`, ML Kit Image Labeling |
 | `vision-faces` | `FaceDetectionEngine` (id `"faces"`) | `vision`, ML Kit Face Detection |
+| `vision-ocr-chinese`, `-japanese`, `-korean`, `-devanagari` | `ChineseOcrEngine`... (ids `"ocr-chinese"`, `"ocr-japanese"`, `"ocr-korean"`, `"ocr-devanagari"`) | `vision-ocr`, ML Kit Text Recognition do script |
 
 Cada recurso novo (NFC, RFID UHF, IA) entra como um módulo próprio, que depende de `core`. O módulo `vision` não conhece os motores: cada motor se registra no `VisionEngineRegistry` (ex.: `BarcodeEngine.register()`), e as pontes escolhem o motor pelo id.
 
@@ -136,6 +137,7 @@ scanner-vc-ia-rfid/
 ├── vision-objects/                        # ObjectDetectionEngine
 ├── vision-labels/                         # ImageLabelingEngine
 ├── vision-faces/                          # FaceDetectionEngine
+├── vision-ocr-{chinese,japanese,korean,devanagari}/  # OCR por script
 ├── sample/                                # App Android nativo de exemplo
 │
 ├── dotnet/                                # Ponte .NET MAUI
@@ -185,6 +187,7 @@ Cada domínio tem o próprio pacote MAUI (com a própria binding) e o próprio p
 | RFID UHF | `rfid`, `rfid-zebra` (opcional) | `ScannerVcIaRfid.Maui.Rfid` | `scanner_vc_ia_rfid_rfid` |
 | IA de linguagem | `ai-language` | `ScannerVcIaRfid.Maui.Ai` | `scanner_vc_ia_rfid_ai` |
 | Motores extras de visão (complemento) | `vision-objects`, `vision-labels`, `vision-faces` | `ScannerVcIaRfid.Maui.VisionExtras` | `scanner_vc_ia_rfid_vision_extras` |
+| OCR por script (complemento) | `vision-ocr-chinese`, `-japanese`, `-korean`, `-devanagari` | `ScannerVcIaRfid.Maui.OcrScripts` | `scanner_vc_ia_rfid_ocr_scripts` |
 
 ## Guia rápido de integração
 
@@ -562,6 +565,25 @@ VisionScannerWidget(
 ```
 
 Exemplos em [`dotnet/ScannerVcIaRfid.Maui.Sample`](dotnet/ScannerVcIaRfid.Maui.Sample) e [`flutter/scanner_vc_ia_rfid_vision_extras/example`](flutter/scanner_vc_ia_rfid_vision_extras/example).
+
+### OCR em chinês, japonês, coreano e devanágari
+
+O OCR padrão (`ocr`) lê alfabetos latinos. Quatro motores complementares leem outros scripts com o mesmo `OcrTextEngine`: o resultado tem o mesmo JSON (`format` `VISION_OCR`, com `fullText` e `blocks`), e cada modelo também lê texto latino.
+
+| Id | Script |
+|---|---|
+| `ocr-chinese` | Chinês simplificado e tradicional |
+| `ocr-japanese` | Japonês |
+| `ocr-korean` | Coreano |
+| `ocr-devanagari` | Devanágari (hindi, marathi, nepali...) |
+
+Cada script é um módulo nativo próprio (`vision-ocr-<script>`) com um modelo embarcado de alguns MB, sem Play Services. No app nativo, inclua só os scripts que usar. Os pacotes MAUI e Flutter trazem os quatro.
+
+- **Nativo:** `view.setVisionEngine(ChineseOcrEngine.create())`.
+- **MAUI** (`ScannerVcIaRfid.Maui.OcrScripts`): `builder.UseOcrScripts();` e `CameraScannerView.Engine = OcrScriptEngines.Chinese;`.
+- **Flutter** (`scanner_vc_ia_rfid_ocr_scripts`, basta estar no `pubspec.yaml`): `VisionScannerWidget(engine: OcrScriptEngines.chinese, ...)`.
+
+Exemplo em [`flutter/scanner_vc_ia_rfid_ocr_scripts/example`](flutter/scanner_vc_ia_rfid_ocr_scripts/example).
 
 ---
 

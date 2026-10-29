@@ -6,6 +6,7 @@ import androidx.camera.core.ImageProxy
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.TextRecognizerOptionsInterface
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.scannervciarfid.core.ScanResult
 import com.scannervciarfid.core.ScannerListener
@@ -26,9 +27,13 @@ import org.json.JSONObject
  * org.json - ja disponivel na plataforma Android, sem dependencia extra
  * como Gson/Moshi.
  */
-class OcrTextEngine : VisionEngineAnalyzer {
+class OcrTextEngine @JvmOverloads constructor(
+    // Latino por padrao. Os modulos vision-ocr-chinese, -japanese, -korean e
+    // -devanagari passam as opcoes do proprio script (e reconhecem latino tambem).
+    options: TextRecognizerOptionsInterface = TextRecognizerOptions.DEFAULT_OPTIONS
+) : VisionEngineAnalyzer {
 
-    private val textRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+    private val textRecognizer = TextRecognition.getClient(options)
     private var scannerListener: ScannerListener? = null
     private var graphicOverlay: GraphicOverlay? = null
     private val throttle = ScanResultThrottle(

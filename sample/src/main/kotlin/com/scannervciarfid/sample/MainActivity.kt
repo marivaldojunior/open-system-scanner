@@ -33,6 +33,10 @@ import com.scannervciarfid.vision.faces.FaceDetectionEngine
 import com.scannervciarfid.vision.labels.ImageLabelingEngine
 import com.scannervciarfid.vision.objects.ObjectDetectionEngine
 import com.scannervciarfid.vision.ocr.OcrTextEngine
+import com.scannervciarfid.vision.ocr.chinese.ChineseOcrEngine
+import com.scannervciarfid.vision.ocr.devanagari.DevanagariOcrEngine
+import com.scannervciarfid.vision.ocr.japanese.JapaneseOcrEngine
+import com.scannervciarfid.vision.ocr.korean.KoreanOcrEngine
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -318,7 +322,11 @@ class MainActivity : ComponentActivity() {
             "OCR" to { OcrTextEngine() },
             "Objetos" to { ObjectDetectionEngine() },
             "Rótulos" to { ImageLabelingEngine() },
-            "Rostos" to { FaceDetectionEngine() }
+            "Rostos" to { FaceDetectionEngine() },
+            "OCR chinês" to { ChineseOcrEngine.create() },
+            "OCR japonês" to { JapaneseOcrEngine.create() },
+            "OCR coreano" to { KoreanOcrEngine.create() },
+            "OCR devanágari" to { DevanagariOcrEngine.create() }
         )
     }
 }

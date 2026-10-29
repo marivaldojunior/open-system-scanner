@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using ScannerVcIaRfid.Maui.Ai.Services;
 using ScannerVcIaRfid.Maui.Controls;
 using ScannerVcIaRfid.Maui.Nfc.Services;
+using ScannerVcIaRfid.Maui.OcrScripts;
 using ScannerVcIaRfid.Maui.Rfid.Services;
 using ScannerVcIaRfid.Maui.Services;
 using ScannerVcIaRfid.Maui.VisionExtras;
@@ -26,6 +27,9 @@ public static class MauiProgram
 
         // Motores extras (objetos, rotulos, rostos) para o VisionScanner.
         builder.UseVisionExtras();
+
+        // OCR em chines, japones, coreano e devanagari.
+        builder.UseOcrScripts();
 
         builder.ConfigureMauiHandlers(handlers =>
         {

@@ -72,6 +72,10 @@ dependencies {
     implementation(project(":vision-objects"))
     implementation(project(":vision-labels"))
     implementation(project(":vision-faces"))
+    implementation(project(":vision-ocr-chinese"))
+    implementation(project(":vision-ocr-japanese"))
+    implementation(project(":vision-ocr-korean"))
+    implementation(project(":vision-ocr-devanagari"))
 
     implementation(libs.androidx.core.ktx)
     // Necessario para ComponentActivity.registerForActivityResult(...)

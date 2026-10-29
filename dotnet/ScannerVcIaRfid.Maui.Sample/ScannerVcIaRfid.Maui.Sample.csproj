@@ -46,6 +46,7 @@
     <ProjectReference Include="..\ScannerVcIaRfid.Maui.Rfid\ScannerVcIaRfid.Maui.Rfid.csproj" />
     <ProjectReference Include="..\ScannerVcIaRfid.Maui.Ai\ScannerVcIaRfid.Maui.Ai.csproj" />
     <ProjectReference Include="..\ScannerVcIaRfid.Maui.VisionExtras\ScannerVcIaRfid.Maui.VisionExtras.csproj" />
+    <ProjectReference Include="..\ScannerVcIaRfid.Maui.OcrScripts\ScannerVcIaRfid.Maui.OcrScripts.csproj" />
   </ItemGroup>
 
 </Project>

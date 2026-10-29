@@ -33,6 +33,7 @@ rootProject.name = "scanner-vc-ia-rfid"
 //   vision-objects   -> motor de deteccao e rastreio de objetos (ML Kit Object Detection)
 //   vision-labels    -> motor de rotulagem de imagem (ML Kit Image Labeling)
 //   vision-faces     -> motor de deteccao de rostos (ML Kit Face Detection)
+//   vision-ocr-*     -> OCR em chines, japones, coreano e devanagari (um modulo por script)
 include(":core")
 include(":barcode-hardware")
 include(":vision")
@@ -46,6 +47,10 @@ include(":ai-language")
 include(":vision-objects")
 include(":vision-labels")
 include(":vision-faces")
+include(":vision-ocr-chinese")
+include(":vision-ocr-japanese")
+include(":vision-ocr-korean")
+include(":vision-ocr-devanagari")
 
 // rfid-zebra usa o SDK Zebra RFID API3, que e proprietario e nao vem no
 // repositorio (ver libs/README.md). O modulo so entra no build quando o SDK

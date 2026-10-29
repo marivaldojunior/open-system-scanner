@@ -1,0 +1,69 @@
+group 'com.scannervciarfid.flutter.ocrscripts'
+version '1.0'
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.11.1'
+        // O .aar do nucleo e CameraX 1.6 / Lifecycle 2.11 sao compilados com
+        // Kotlin 2.2 - um compilador Kotlin 1.9 recusa ler esses metadados.
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.10'
+    }
+}
+
+// Repositorio Maven gerado por `./gradlew publish` na raiz do repositorio
+// (build/maven-repo). Para usar outro repositorio (ex.: GitHub Packages
+// ou um diretorio fora do clone), defina a propriedade Gradle
+// scannerVcIaRfidMavenRepo no gradle.properties do app.
+def scannerVcIaRfidMavenRepo = project.findProperty('scannerVcIaRfidMavenRepo') ?:
+        file("${projectDir}/../../../build/maven-repo").toURI()
+
+// O repositorio vai para todos os projetos, nao so para o plugin: o modulo
+// :app tambem resolve os .aar (classpath de runtime). Declarado so no
+// plugin, o build do app falha com "Could not find com.scannervciarfid:...".
+rootProject.allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        maven {
+            url scannerVcIaRfidMavenRepo
+        }
+    }
+}
+
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+
+android {
+    namespace 'com.scannervciarfid.flutter.ocrscripts'
+    compileSdk 36
+
+    defaultConfig {
+        minSdk 24
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+}
+
+// Mantenha igual a VERSION_NAME do gradle.properties na raiz do repositorio.
+def scannerVcIaRfidVersion = '0.1.0'
+
+dependencies {
+    // O POM de cada modulo lista as proprias dependencias (vision, ML Kit) -
+    // nao repita aqui.
+    implementation "com.scannervciarfid:vision-ocr-chinese:$scannerVcIaRfidVersion"
+    implementation "com.scannervciarfid:vision-ocr-japanese:$scannerVcIaRfidVersion"
+    implementation "com.scannervciarfid:vision-ocr-korean:$scannerVcIaRfidVersion"
+    implementation "com.scannervciarfid:vision-ocr-devanagari:$scannerVcIaRfidVersion"
+}

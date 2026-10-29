@@ -5,6 +5,7 @@ using ScannerVcIaRfid.Maui.Controls;
 using ScannerVcIaRfid.Maui.Models;
 using ScannerVcIaRfid.Maui.Nfc.Models;
 using ScannerVcIaRfid.Maui.Nfc.Services;
+using ScannerVcIaRfid.Maui.OcrScripts;
 using ScannerVcIaRfid.Maui.Rfid.Models;
 using ScannerVcIaRfid.Maui.Rfid.Services;
 using ScannerVcIaRfid.Maui.Services;
@@ -411,7 +412,11 @@ public partial class MainPage : ContentPage
         (VisionEngines.Ocr, "OCR"),
         (VisionExtraEngines.Objects, "Objetos"),
         (VisionExtraEngines.Labels, "Rótulos"),
-        (VisionExtraEngines.Faces, "Rostos")
+        (VisionExtraEngines.Faces, "Rostos"),
+        (OcrScriptEngines.Chinese, "OCR chinês"),
+        (OcrScriptEngines.Japanese, "OCR japonês"),
+        (OcrScriptEngines.Korean, "OCR coreano"),
+        (OcrScriptEngines.Devanagari, "OCR devanágari")
     ];
 
     private int _engineIndex;
