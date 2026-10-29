@@ -12,7 +12,7 @@ import android.content.Intent
 class NewlandIntentScanner : GenericIntentScanner(
     intentAction = ACTION_SCANNER_RESULT,
     dataExtraKey = EXTRA_BARCODE
-) {
+), SoftTriggerScanner {
 
     override val sourceEngine: String = "Newland_Intent"
 
@@ -22,6 +22,19 @@ class NewlandIntentScanner : GenericIntentScanner(
         )
     }
 
+    // O Newland para sozinho na primeira leitura ou no timeout.
+    override fun startSoftScan() {
+        applicationContext?.sendBroadcast(
+            Intent(ACTION_SCANNER_TRIGGER)
+                .putExtra(EXTRA_SCAN_TIMEOUT, SOFT_SCAN_TIMEOUT_SECONDS)
+                .putExtra(EXTRA_SCAN_TYPE, SCAN_TYPE_SINGLE)
+        )
+    }
+
+    override fun stopSoftScan() {
+        applicationContext?.sendBroadcast(Intent(ACTION_SCANNER_STOP))
+    }
+
     companion object {
         private const val ACTION_SCANNER_RESULT = "nlscan.action.SCANNER_RESULT"
         private const val EXTRA_BARCODE = "SCAN_BARCODE1"
@@ -29,5 +42,12 @@ class NewlandIntentScanner : GenericIntentScanner(
         private const val ACTION_SCAN_CONFIG = "ACTION_BAR_SCANCFG"
         private const val EXTRA_SCAN_MODE = "EXTRA_SCAN_MODE"
         private const val SCAN_MODE_BROADCAST = 3
+
+        private const val ACTION_SCANNER_TRIGGER = "nlscan.action.SCANNER_TRIG"
+        private const val ACTION_SCANNER_STOP = "nlscan.action.STOP_SCAN"
+        private const val EXTRA_SCAN_TIMEOUT = "SCAN_TIMEOUT"
+        private const val EXTRA_SCAN_TYPE = "SCAN_TYPE"
+        private const val SOFT_SCAN_TIMEOUT_SECONDS = 5
+        private const val SCAN_TYPE_SINGLE = 1
     }
 }

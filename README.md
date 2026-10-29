@@ -615,8 +615,27 @@ A câmera não envia um resultado a cada frame. Um valor igual ao anterior só �
 - **Urovo:** coloque o modo de saída em "Intent" (Configurações > Scanner ou ScanWedge). A biblioteca escuta os valores de fábrica: action `android.intent.ACTION_DECODE_DATA`, extra `barcode_string`.
 - **Outros (Chainway, Sunmi, Seuic...):** configure a saída Intent no app do aparelho (ex.: Keyboard Emulator, InfoWedge) e use o leitor genérico com a mesma action e o mesmo extra.
 
+### Gatilho por software e simbologias
+
+Dois recursos opcionais do leitor físico, em interfaces próprias (`SoftTriggerScanner` e `SymbologyConfigurableScanner`). As pontes informam o suporte do leitor do aparelho:
+
+| Recurso | Fabricantes | MAUI (`IHardwareScannerService`) | Flutter (`ScannerVcIaRfidHardware`) |
+|---|---|---|---|
+| Gatilho por software (botão na tela) | Zebra (`SOFT_SCAN_TRIGGER`), Honeywell (`ACTION_CONTROL_SCANNER`), Newland (`nlscan.action.SCANNER_TRIG`) | `SupportsSoftTrigger`, `StartSoftScan()`, `StopSoftScan()` | `supportsSoftTrigger()`, `startSoftScan()`, `stopSoftScan()` |
+| Ligar e desligar simbologias | Zebra (DataWedge `SET_CONFIG`, modo `UPDATE`) | `SupportsSymbologyConfiguration`, `ConfigureSymbologies(enabled, disabled)` | `supportsSymbologyConfiguration()`, `configureSymbologies(enabled:, disabled:)` |
+
+- Os nomes de simbologia seguem os decoders do DataWedge sem o prefixo `decoder_`: `ean13`, `ean8`, `upca`, `upce0`, `code128`, `code39`, `i2of5`, `qrcode`, `datamatrix`, `pdf417`...
+- A leitura disparada por software chega pelo mesmo evento/stream do gatilho físico.
+- No Honeywell, o gatilho por software exige o leitor reivindicado (`Start()`/stream ativo). No Newland, a leitura para sozinha na primeira leitura ou em 5 s.
+- Urovo, Datalogic e o leitor genérico não têm gatilho por software sem o SDK do fabricante.
+
+```csharp
+_hardwareScanner.ConfigureSymbologies(enabled: ["ean13", "code128"], disabled: ["qrcode"]);
+if (_hardwareScanner.SupportsSoftTrigger) _hardwareScanner.StartSoftScan();
+```
+
 > [!NOTE]
-> Os adapters Honeywell, Newland e Urovo seguem a documentação dos fabricantes, mas ainda não foram testados em aparelho. Os nomes de action e extra podem mudar entre firmwares.
+> Os adapters Honeywell, Newland e Urovo e os gatilhos por software Honeywell e Newland seguem a documentação dos fabricantes, mas ainda não foram testados em aparelho. Os nomes de action e extra podem mudar entre firmwares.
 
 ## Requisitos
 

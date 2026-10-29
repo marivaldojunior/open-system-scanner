@@ -130,6 +130,17 @@ class _ScannerExampleScreenState extends State<ScannerExampleScreen> {
     }
   }
 
+  // Gatilho por software do leitor fisico (Zebra, Honeywell, Newland).
+  Future<void> _softScan() async {
+    final hardware = ScannerVcIaRfidHardware.instance;
+    if (!await hardware.supportsSoftTrigger()) {
+      if (!mounted) return;
+      setState(() => _lastValue = 'O leitor deste aparelho não aceita gatilho por software.');
+      return;
+    }
+    await hardware.startSoftScan();
+  }
+
   // Digitalizacao pela tela do Google Play Services: ate 5 paginas, com PDF.
   Future<void> _scanDocument() async {
     try {
@@ -203,6 +214,10 @@ class _ScannerExampleScreenState extends State<ScannerExampleScreen> {
               OutlinedButton(
                 onPressed: _scanDocument,
                 child: const Text('Digitalizar documento'),
+              ),
+              OutlinedButton(
+                onPressed: _softScan,
+                child: const Text('Ler por software (sem gatilho físico)'),
               ),
               const SizedBox(height: 16),
               // PlatformViews exigem dimensoes explicitas no lado Flutter -

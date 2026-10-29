@@ -1,6 +1,5 @@
 package com.scannervciarfid.hardware
 
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 
@@ -19,18 +18,12 @@ import android.os.Bundle
 class HoneywellIntentScanner : GenericIntentScanner(
     intentAction = ACTION_SCAN_OUTPUT,
     dataExtraKey = EXTRA_DATA
-) {
+), SoftTriggerScanner {
 
     override val sourceEngine: String = "Honeywell_Intent"
 
-    private var appContext: Context? = null
-
-    override fun configureDevice(context: Context) {
-        appContext = context
-    }
-
     override fun start() {
-        val context = appContext ?: return
+        val context = applicationContext ?: return
         val properties = Bundle().apply {
             putBoolean("DPR_DATA_INTENT", true)
             putString("DPR_DATA_INTENT_ACTION", ACTION_SCAN_OUTPUT)
@@ -45,7 +38,7 @@ class HoneywellIntentScanner : GenericIntentScanner(
     }
 
     override fun stop() {
-        val context = appContext ?: return
+        val context = applicationContext ?: return
         context.sendBroadcast(
             Intent(ACTION_RELEASE_SCANNER).setPackage(DATA_COLLECTION_SERVICE_PACKAGE)
         )
@@ -53,8 +46,20 @@ class HoneywellIntentScanner : GenericIntentScanner(
 
     override fun release() {
         stop()
-        appContext = null
         super.release()
+    }
+
+    // Exige o leitor reivindicado (start()).
+    override fun startSoftScan() = sendScanControl(true)
+
+    override fun stopSoftScan() = sendScanControl(false)
+
+    private fun sendScanControl(scan: Boolean) {
+        applicationContext?.sendBroadcast(
+            Intent(ACTION_CONTROL_SCANNER)
+                .setPackage(DATA_COLLECTION_SERVICE_PACKAGE)
+                .putExtra(EXTRA_SCAN, scan)
+        )
     }
 
     companion object {
@@ -64,6 +69,8 @@ class HoneywellIntentScanner : GenericIntentScanner(
         private const val DATA_COLLECTION_SERVICE_PACKAGE = "com.intermec.datacollectionservice"
         private const val ACTION_CLAIM_SCANNER = "com.honeywell.aidc.action.ACTION_CLAIM_SCANNER"
         private const val ACTION_RELEASE_SCANNER = "com.honeywell.aidc.action.ACTION_RELEASE_SCANNER"
+        private const val ACTION_CONTROL_SCANNER = "com.honeywell.aidc.action.ACTION_CONTROL_SCANNER"
+        private const val EXTRA_SCAN = "com.honeywell.aidc.extra.EXTRA_SCAN"
         private const val EXTRA_SCANNER = "com.honeywell.aidc.extra.EXTRA_SCANNER"
         private const val EXTRA_PROFILE = "com.honeywell.aidc.extra.EXTRA_PROFILE"
         private const val EXTRA_PROPERTIES = "com.honeywell.aidc.extra.EXTRA_PROPERTIES"

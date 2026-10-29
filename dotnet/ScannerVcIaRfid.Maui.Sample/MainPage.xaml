@@ -5,7 +5,7 @@
              x:Class="ScannerVcIaRfid.Maui.Sample.MainPage"
              Title="ScannerVcIaRfid">
 
-    <Grid RowDefinitions="Auto,300,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+    <Grid RowDefinitions="Auto,300,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
           Padding="16"
           RowSpacing="16">
 
@@ -58,6 +58,10 @@
         <Button Grid.Row="13"
                 Text="NFC: gravar texto na próxima tag"
                 Clicked="OnNfcWriteClicked" />
+
+        <Button Grid.Row="14"
+                Text="Ler por software (sem gatilho físico)"
+                Clicked="OnSoftScanClicked" />
 
         <Button x:Name="ReadTidButton"
                 Grid.Row="11"

@@ -19,6 +19,10 @@ internal class HardwareScannerStreamHandler(
 ) : EventChannel.StreamHandler {
 
     private var initialized = false
+
+    /** Leitor atual (muda com replaceScanner). */
+    val scanner: UniversalScanner
+        get() = hardwareScanner
     private var eventSink: EventChannel.EventSink? = null
 
     /**

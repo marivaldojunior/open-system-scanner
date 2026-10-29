@@ -15,7 +15,7 @@ import android.os.Bundle
 class ZebraDataWedgeScanner : GenericIntentScanner(
     intentAction = ACTION_SCAN_OUTPUT,
     dataExtraKey = EXTRA_DATAWEDGE_DATA_STRING
-) {
+), SoftTriggerScanner, SymbologyConfigurableScanner {
 
     override val sourceEngine: String = "Zebra_DataWedge"
 
@@ -27,6 +27,46 @@ class ZebraDataWedgeScanner : GenericIntentScanner(
     // O DataWedge envia a simbologia como "LABEL-TYPE-EAN13", "LABEL-TYPE-QRCODE"...
     override fun readFormat(intent: Intent): String =
         intent.getStringExtra(EXTRA_DATAWEDGE_LABEL_TYPE)?.removePrefix(LABEL_TYPE_PREFIX) ?: "UNKNOWN"
+
+    override fun startSoftScan() = sendApiCommand(EXTRA_SOFT_SCAN_TRIGGER, SOFT_SCAN_START)
+
+    override fun stopSoftScan() = sendApiCommand(EXTRA_SOFT_SCAN_TRIGGER, SOFT_SCAN_STOP)
+
+    /**
+     * Atualiza so os decoders informados no perfil do app (CONFIG_MODE
+     * UPDATE, sem RESET_CONFIG): os outros parametros do BARCODE continuam.
+     */
+    override fun configureSymbologies(enabled: Array<String>, disabled: Array<String>) {
+        val context = applicationContext ?: return
+        val params = Bundle().apply {
+            enabled.forEach { putString(DECODER_PREFIX + it.lowercase(), "true") }
+            disabled.forEach { putString(DECODER_PREFIX + it.lowercase(), "false") }
+        }
+        val barcodePlugin = Bundle().apply {
+            putString("PLUGIN_NAME", "BARCODE")
+            putString("RESET_CONFIG", "false")
+            putBundle("PARAM_LIST", params)
+        }
+        val profileConfig = Bundle().apply {
+            putString("PROFILE_NAME", profileName(context))
+            putString("PROFILE_ENABLED", "true")
+            putString("CONFIG_MODE", "UPDATE")
+            putBundle("PLUGIN_CONFIG", barcodePlugin)
+        }
+        applicationContext?.sendBroadcast(
+            Intent(ACTION_DATAWEDGE_API)
+                .setPackage(DATAWEDGE_PACKAGE)
+                .putExtra(EXTRA_SET_CONFIG, profileConfig)
+        )
+    }
+
+    private fun sendApiCommand(extra: String, value: String) {
+        applicationContext?.sendBroadcast(
+            Intent(ACTION_DATAWEDGE_API).setPackage(DATAWEDGE_PACKAGE).putExtra(extra, value)
+        )
+    }
+
+    private fun profileName(context: Context) = PROFILE_PREFIX + context.packageName
 
     override fun configureDevice(context: Context) {
         val barcodePlugin = Bundle().apply {
@@ -63,7 +103,7 @@ class ZebraDataWedgeScanner : GenericIntentScanner(
         }
 
         val profileConfig = Bundle().apply {
-            putString("PROFILE_NAME", "ScannerVcIaRfid_${context.packageName}")
+            putString("PROFILE_NAME", profileName(context))
             putString("PROFILE_ENABLED", "true")
             putString("CONFIG_MODE", "CREATE_IF_NOT_EXIST")
             putParcelableArray("APP_LIST", arrayOf(appConfig))
@@ -88,6 +128,11 @@ class ZebraDataWedgeScanner : GenericIntentScanner(
         private const val DATAWEDGE_PACKAGE = "com.symbol.datawedge"
         private const val ACTION_DATAWEDGE_API = "com.symbol.datawedge.api.ACTION"
         private const val EXTRA_SET_CONFIG = "com.symbol.datawedge.api.SET_CONFIG"
+        private const val EXTRA_SOFT_SCAN_TRIGGER = "com.symbol.datawedge.api.SOFT_SCAN_TRIGGER"
+        private const val SOFT_SCAN_START = "START_SCANNING"
+        private const val SOFT_SCAN_STOP = "STOP_SCANNING"
+        private const val DECODER_PREFIX = "decoder_"
+        private const val PROFILE_PREFIX = "ScannerVcIaRfid_"
         private const val INTENT_DELIVERY_BROADCAST = "2"
     }
 }

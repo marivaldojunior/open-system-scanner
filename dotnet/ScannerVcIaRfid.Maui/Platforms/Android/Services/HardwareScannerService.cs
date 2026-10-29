@@ -1,4 +1,5 @@
 using Android.App;
+using Android.Runtime;
 using Com.Scannervciarfid.Core;
 using Com.Scannervciarfid.Hardware;
 using ScannerVcIaRfid.Maui.Models;
@@ -69,6 +70,37 @@ public sealed class HardwareScannerService : IHardwareScannerService, IDisposabl
     public void Start() => _nativeScanner.Start();
 
     public void Stop() => _nativeScanner.Stop();
+
+    public bool SupportsSoftTrigger => AsCapability<ISoftTriggerScanner>() is not null;
+
+    public void StartSoftScan() => RequireCapability<ISoftTriggerScanner>("gatilho por software").StartSoftScan();
+
+    public void StopSoftScan() => RequireCapability<ISoftTriggerScanner>("gatilho por software").StopSoftScan();
+
+    public bool SupportsSymbologyConfiguration => AsCapability<ISymbologyConfigurableScanner>() is not null;
+
+    public void ConfigureSymbologies(IEnumerable<string> enabled, IEnumerable<string> disabled) =>
+        RequireCapability<ISymbologyConfigurableScanner>("configuracao de simbologias")
+            .ConfigureSymbologies(enabled.ToArray(), disabled.ToArray());
+
+    // O factory devolve o leitor como IUniversalScanner. Um cast C# comum
+    // falha num objeto Java: JavaCast pergunta ao Java se ele implementa a
+    // interface. Calculado a cada chamada porque UseGenericIntent troca o leitor.
+    private T? AsCapability<T>() where T : class, IJavaObject
+    {
+        try
+        {
+            return _nativeScanner.JavaCast<T>();
+        }
+        catch (InvalidCastException)
+        {
+            return null;
+        }
+    }
+
+    private T RequireCapability<T>(string capability) where T : class, IJavaObject =>
+        AsCapability<T>() ?? throw new NotSupportedException(
+            $"O leitor deste aparelho nao suporta {capability}.");
 
     public void Release()
     {

@@ -48,6 +48,32 @@ class ScannerVcIaRfidHardware {
         .map((dynamic event) => ScanResult.fromMap(event as Map<dynamic, dynamic>));
   }
 
+  /// O leitor aceita gatilho por software (Zebra, Honeywell, Newland). O
+  /// valor muda com [useGenericIntent].
+  Future<bool> supportsSoftTrigger() async =>
+      await _methodChannel.invokeMethod<bool>('supportsSoftTrigger') ?? false;
+
+  /// Dispara a leitura sem o gatilho fisico. Exige uma subscription ativa de
+  /// [onBarcodeScanned]. Lanca [PlatformException] (code NOT_SUPPORTED)
+  /// quando o leitor nao suporta.
+  Future<void> startSoftScan() => _methodChannel.invokeMethod<void>('startSoftScan');
+
+  Future<void> stopSoftScan() => _methodChannel.invokeMethod<void>('stopSoftScan');
+
+  /// O leitor liga e desliga simbologias pelo app (hoje so Zebra/DataWedge).
+  Future<bool> supportsSymbologyConfiguration() async =>
+      await _methodChannel.invokeMethod<bool>('supportsSymbologyConfiguration') ?? false;
+
+  /// Liga e desliga simbologias. Os nomes seguem os decoders do DataWedge
+  /// sem o prefixo 'decoder_' (ex.: 'ean13', 'qrcode', 'code128',
+  /// 'datamatrix', 'pdf417').
+  Future<void> configureSymbologies({List<String> enabled = const [], List<String> disabled = const []}) {
+    return _methodChannel.invokeMethod<void>('configureSymbologies', {
+      'enabled': enabled,
+      'disabled': disabled,
+    });
+  }
+
   /// Troca o leitor detectado pelo fabricante por um leitor de Intent
   /// generico (Chainway, Sunmi, Seuic...). Use a action e o extra
   /// configurados na saida Intent do aparelho. Uma subscription ativa de

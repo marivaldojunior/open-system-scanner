@@ -27,4 +27,25 @@ public interface IHardwareScannerService
     void Stop();
 
     void Release();
+
+    /// <summary>
+    /// O leitor aceita gatilho por software (Zebra, Honeywell, Newland). O
+    /// valor muda com <see cref="UseGenericIntent"/>.
+    /// </summary>
+    bool SupportsSoftTrigger { get; }
+
+    /// <summary>Dispara a leitura sem o gatilho fisico. Exige <see cref="Initialize"/>.</summary>
+    void StartSoftScan();
+
+    void StopSoftScan();
+
+    /// <summary>O leitor liga e desliga simbologias pelo app (hoje so Zebra/DataWedge).</summary>
+    bool SupportsSymbologyConfiguration { get; }
+
+    /// <summary>
+    /// Liga e desliga simbologias. Os nomes seguem os decoders do DataWedge
+    /// sem o prefixo "decoder_" (ex.: "ean13", "qrcode", "code128",
+    /// "datamatrix", "pdf417"). Exige <see cref="Initialize"/>.
+    /// </summary>
+    void ConfigureSymbologies(IEnumerable<string> enabled, IEnumerable<string> disabled);
 }

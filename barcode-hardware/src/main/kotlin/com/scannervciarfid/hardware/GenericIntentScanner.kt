@@ -71,6 +71,10 @@ open class GenericIntentScanner @JvmOverloads constructor(
      */
     protected open fun accepts(intent: Intent): Boolean = true
 
+    /** Context da aplicacao entre initialize() e release(); null fora disso. */
+    protected val applicationContext: Context?
+        get() = appContext
+
     /**
      * Ponto de extensao para adapters que precisam configurar o servico do
      * fabricante (ex.: criar o perfil DataWedge da Zebra) para que ele envie

@@ -254,6 +254,18 @@ public partial class MainPage : ContentPage
         });
     }
 
+    // Gatilho por software do leitor fisico (Zebra, Honeywell, Newland).
+    private void OnSoftScanClicked(object? sender, EventArgs e)
+    {
+        if (!_hardwareScanner.SupportsSoftTrigger)
+        {
+            LastScanLabel.Text = "O leitor deste aparelho não aceita gatilho por software.";
+            return;
+        }
+
+        _hardwareScanner.StartSoftScan();
+    }
+
     // Arma a gravacao: a proxima tag aproximada recebe o texto.
     private async void OnNfcWriteClicked(object? sender, EventArgs e)
     {

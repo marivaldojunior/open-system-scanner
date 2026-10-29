@@ -8,6 +8,8 @@ import com.scannervciarfid.documentscanner.DocumentScanListener
 import com.scannervciarfid.documentscanner.DocumentScanResult
 import com.scannervciarfid.documentscanner.GoogleDocumentScanner
 import com.scannervciarfid.hardware.HardwareScannerFactory
+import com.scannervciarfid.hardware.SoftTriggerScanner
+import com.scannervciarfid.hardware.SymbologyConfigurableScanner
 import com.scannervciarfid.vision.barcode.BarcodeEngine
 import com.scannervciarfid.vision.ocr.OcrTextEngine
 import io.flutter.embedding.engine.plugins.FlutterPlugin
@@ -72,6 +74,23 @@ class ScannerVcIaRfidPlugin : FlutterPlugin, ActivityAware, MethodChannel.Method
             "useGenericIntent" -> useGenericIntent(call, result)
             "scanWithCodeScanner" -> scanWithCodeScanner(result)
             "scanDocument" -> scanDocument(call, result)
+            "supportsSoftTrigger" -> result.success(hardwareStreamHandler?.scanner is SoftTriggerScanner)
+            "startSoftScan" -> withSoftTrigger(result) { it.startSoftScan() }
+            "stopSoftScan" -> withSoftTrigger(result) { it.stopSoftScan() }
+            "supportsSymbologyConfiguration" ->
+                result.success(hardwareStreamHandler?.scanner is SymbologyConfigurableScanner)
+            "configureSymbologies" -> {
+                val scanner = hardwareStreamHandler?.scanner as? SymbologyConfigurableScanner
+                if (scanner == null) {
+                    result.error("NOT_SUPPORTED", "O leitor deste aparelho nao suporta configuracao de simbologias.", null)
+                } else {
+                    scanner.configureSymbologies(
+                        call.argument<List<String>>("enabled").orEmpty().toTypedArray(),
+                        call.argument<List<String>>("disabled").orEmpty().toTypedArray()
+                    )
+                    result.success(null)
+                }
+            }
             else -> result.notImplemented()
         }
     }
@@ -90,6 +109,16 @@ class ScannerVcIaRfidPlugin : FlutterPlugin, ActivityAware, MethodChannel.Method
             call.argument<String>("intentCategory")
         )
         hardwareStreamHandler?.replaceScanner(scanner)
+        result.success(null)
+    }
+
+    private inline fun withSoftTrigger(result: MethodChannel.Result, action: (SoftTriggerScanner) -> Unit) {
+        val scanner = hardwareStreamHandler?.scanner as? SoftTriggerScanner
+        if (scanner == null) {
+            result.error("NOT_SUPPORTED", "O leitor deste aparelho nao suporta gatilho por software.", null)
+            return
+        }
+        action(scanner)
         result.success(null)
     }
 
