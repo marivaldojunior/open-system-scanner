@@ -2,12 +2,18 @@
 
 **Biblioteca Universal de Captura de Dados.**
 
-O `ScannerVcIaRfid` unifica, sob uma única fachada nativa em Kotlin, duas formas completamente diferentes de capturar código de barras em um dispositivo Android corporativo:
+O `ScannerVcIaRfid` reúne, sob uma API nativa em Kotlin, as formas de capturar dados num aparelho Android corporativo:
 
-- **Hardware físico** — coletores Zebra (perfis DataWedge) e Datalogic (Intent Wedge), além de qualquer leitor genérico baseado em Intent, todos escutados via `BroadcastReceiver`.
-- **Câmera** — leitura óptica via **CameraX** + **Google ML Kit Barcode Scanning**, quando o aparelho não tem um leitor dedicado.
+- **Código de barras por hardware** — coletores Zebra (DataWedge), Datalogic, Honeywell, Newland, Urovo e qualquer leitor que envie a leitura por Intent. Inclui gatilho por software e configuração de simbologias.
+- **Câmera e visão computacional** — CameraX + Google ML Kit: código de barras, OCR (latino, chinês, japonês, coreano e devanágari), objetos, rótulos de imagem e rostos. Também o Google Code Scanner e o Google Document Scanner (Play Services).
+- **NFC / RFID HF** — leitura e gravação NDEF com o Reader Mode do Android.
+- **RFID UHF** — inventário em lotes pelo DataWedge da Zebra ou pelo SDK Zebra RFID API3 (com operações por tag: memória, lock, kill, localização, potência, filtro e bateria).
+- **IA de linguagem on-device** — identificação de idioma, tradução e extração de entidades (ML Kit).
 
-O time de app nunca precisa saber qual fabricante está por trás do coletor, nem lidar com CameraX diretamente. O núcleo é dividido em módulos Gradle publicados como `.aar` independentes: o app leva só os recursos que usar. Os módulos são consumidos de forma nativa, via **.NET MAUI** (Android Binding Library) ou via **Flutter** (Platform Channels).
+O app não precisa saber qual fabricante está por trás do coletor, nem lidar com CameraX, ML Kit ou SDKs de fabricante. Cada recurso é um módulo Gradle publicado como `.aar` independente: o app leva só o que usar. Os módulos são consumidos de forma nativa, via **.NET MAUI** (Android Binding Library) ou via **Flutter** (Platform Channels), sempre com um pacote por domínio.
+
+> [!NOTE]
+> Plataforma: só Android. Os pacotes MAUI usam `net10.0-android`, e os plugins Flutter só têm implementação Android.
 
 ---
 
@@ -21,10 +27,20 @@ O time de app nunca precisa saber qual fabricante está por trás do coletor, ne
 - [Estrutura do repositório](#estrutura-do-repositório)
 - [Build dos módulos nativos](#build-dos-módulos-nativos)
 - [Pacotes por domínio](#pacotes-por-domínio)
+- [Apps de exemplo](#apps-de-exemplo)
 - [Guia rápido de integração](#guia-rápido-de-integração)
-  - [Requisito global — permissão de câmera](#requisito-global--permissão-de-câmera)
+  - [Permissão de câmera](#permissão-de-câmera)
   - [MAUI](#maui)
   - [Flutter](#flutter)
+  - [NFC](#nfc)
+  - [RFID UHF](#rfid-uhf)
+  - [IA de linguagem](#ia-de-linguagem)
+  - [Motores extras de visão](#motores-extras-de-visão)
+  - [OCR em chinês, japonês, coreano e devanágari](#ocr-em-chinês-japonês-coreano-e-devanágari)
+- [Origem dos dados de leitura (`sourceEngine`)](#origem-dos-dados-de-leitura-sourceengine)
+- [Configuração dos coletores físicos](#configuração-dos-coletores-físicos)
+  - [Gatilho por software e simbologias](#gatilho-por-software-e-simbologias)
+- [Requisitos](#requisitos)
 
 ---
 
@@ -32,31 +48,25 @@ O time de app nunca precisa saber qual fabricante está por trás do coletor, ne
 
 ```mermaid
 flowchart TB
-    subgraph Native["1 · Núcleo Nativo Android (Kotlin) — um .aar por módulo"]
-        Core["core: ScanResult · ScannerListener · UniversalScanner"]
-        Hardware["barcode-hardware: HardwareScannerFactory · Zebra · Datalogic · Generic"]
-        Vision["vision: VisionScannerView (CameraX) · VisionEngineRegistry"]
-        VBarcode["vision-barcode: BarcodeEngine (ML Kit Barcode)"]
-        VOcr["vision-ocr: OcrTextEngine (ML Kit Text Recognition)"]
-        Hardware --> Core
-        Vision --> Core
-        VBarcode --> Vision
-        VOcr --> Vision
+    subgraph Native["1 · Núcleo nativo Android (Kotlin) — um .aar por módulo"]
+        Barcode["Código de barras e câmera: core · barcode-hardware · vision · vision-barcode · vision-ocr · code-scanner · document-scanner"]
+        Nfc["NFC: nfc"]
+        Rfid["RFID UHF: rfid · rfid-zebra (opcional)"]
+        Ai["IA: ai-language"]
+        Extras["Complementos de visão: vision-objects · vision-labels · vision-faces · vision-ocr-*"]
+        Extras --> Barcode
     end
 
-    subgraph Maui["2 · Android Binding Library (.NET MAUI)"]
-        Wrapper["ScannerListenerWrapper"]
-        Service["IHardwareScannerService"]
-        Handler["VisionScannerHandler + CommandMapper + Engine"]
+    subgraph Maui["2 · .NET MAUI — uma binding + um pacote por domínio"]
+        MauiPkgs["ScannerVcIaRfid.Maui · .Nfc · .Rfid · .Ai · .VisionExtras · .OcrScripts"]
     end
 
-    subgraph Flutter["3 · Plugin Flutter (Kotlin + Dart)"]
-        EventCh["EventChannel — hardware"]
-        PView["PlatformViewFactory — camera (1 instancia por viewId, motor por id)"]
+    subgraph Flutter["3 · Flutter — um plugin por domínio"]
+        FlutterPkgs["scanner_vc_ia_rfid_flutter · _nfc · _rfid · _ai · _vision_extras · _ocr_scripts"]
     end
 
-    Native --> Maui --> MauiApp["App .NET MAUI"]
-    Native --> Flutter --> FlutterApp["App Flutter"]
+    Native -- "exportMauiAars (.aar por binding)" --> Maui --> MauiApp["App .NET MAUI"]
+    Native -- "publish (Maven local)" --> Flutter --> FlutterApp["App Flutter"]
 ```
 
 ### Módulos nativos
@@ -79,7 +89,7 @@ flowchart TB
 | `vision-faces` | `FaceDetectionEngine` (id `"faces"`) | `vision`, ML Kit Face Detection |
 | `vision-ocr-chinese`, `-japanese`, `-korean`, `-devanagari` | `ChineseOcrEngine`... (ids `"ocr-chinese"`, `"ocr-japanese"`, `"ocr-korean"`, `"ocr-devanagari"`) | `vision-ocr`, ML Kit Text Recognition do script |
 
-Cada recurso novo (NFC, RFID UHF, IA) entra como um módulo próprio, que depende de `core`. O módulo `vision` não conhece os motores: cada motor se registra no `VisionEngineRegistry` (ex.: `BarcodeEngine.register()`), e as pontes escolhem o motor pelo id.
+Cada domínio entra como um módulo próprio. Os módulos de código de barras e câmera dependem de `core` (`ScanResult`); `nfc`, `rfid` e `ai-language` têm contratos próprios e não dependem de `core`. O módulo `vision` não conhece os motores: cada motor se registra no `VisionEngineRegistry` (ex.: `BarcodeEngine.register()`), e as pontes escolhem o motor pelo id. Recursos opcionais do leitor (operações RFID por tag, gatilho por software, simbologias) ficam em interfaces separadas (`RfidTagOperations`, `SoftTriggerScanner`, `SymbologyConfigurableScanner`): as pontes testam se o leitor do aparelho as implementa.
 
 ### 1. Camada Nativa (Kotlin)
 
@@ -92,9 +102,11 @@ compileOnly(files(rootProject.file("libs/EMDK.jar")))
 compileOnly(files(rootProject.file("libs/DatalogicSDK.jar")))
 ```
 
-Esses `.jar` já existem no firmware dos coletores físicos — declará-los como `implementation` embarcaria binários redundantes no `.aar`, inflando o pacote e arriscando conflito de classes com a versão que o próprio aparelho carrega. Na prática, nem é preciso tocar diretamente nessas APIs proprietárias: os adapters de hardware (`ZebraDataWedgeScanner`, `DatalogicIntentScanner`) escutam apenas o resultado da leitura via `BroadcastReceiver`/Intents padrão do Android (perfis DataWedge, Intent Wedge da Datalogic).
+Esses `.jar` já existem no firmware dos coletores físicos — declará-los como `implementation` embarcaria binários redundantes no `.aar`, inflando o pacote e arriscando conflito de classes com a versão que o próprio aparelho carrega. Na prática, nem é preciso tocar diretamente nessas APIs proprietárias: os adapters de hardware escutam apenas o resultado da leitura via `BroadcastReceiver`/Intents padrão do Android (perfis DataWedge, Intent Wedge da Datalogic, Intent API da Honeywell...).
 
-**API pública sem recursos exclusivos do Kotlin.** `ScannerListener`, `UniversalScanner`, `ScanResult` e `VisionEngineProvider` são, propositalmente, Kotlin "sem açúcar": interfaces com métodos tradicionais (`onScanSuccess`/`onScanError`) em vez de `Flow`, nenhuma `suspend fun` pública, nenhuma `inline fun` ou lambda complexo na assinatura pública, e um `data class` com propriedades `String` simples. Geradores de binding (o `class-parse` do .NET Android SDK, o Platform Channel do Flutter) interpretam interfaces e enums Java/Kotlin clássicos sem problema — mas não sabem o que fazer com corrotinas. Restringir a API pública a listeners e classes de dados primitivas é o que permite o **mesmo** `.aar` virar consumível, de forma idêntica, por C# e por Dart.
+O SDK Zebra RFID API3 (módulo `rfid-zebra`) segue a mesma regra por outro motivo: a licença da Zebra não permite publicá-lo junto com a biblioteca. O app adiciona o SDK por conta própria (ver [RFID UHF](#rfid-uhf)).
+
+**API pública sem recursos exclusivos do Kotlin.** `ScannerListener`, `UniversalScanner`, `ScanResult` e `VisionEngineProvider` são, propositalmente, Kotlin "sem açúcar": interfaces com métodos tradicionais (`onScanSuccess`/`onScanError`) em vez de `Flow`, nenhuma `suspend fun` pública, nenhuma `inline fun` ou lambda complexo na assinatura pública, e um `data class` com propriedades `String` simples. Geradores de binding (o `class-parse` do .NET Android SDK, o Platform Channel do Flutter) interpretam interfaces e enums Java/Kotlin clássicos sem problema — mas não sabem o que fazer com corrotinas. Restringir a API pública a listeners e classes de dados primitivas é o que permite o **mesmo** `.aar` virar consumível, de forma idêntica, por C# e por Dart. Resultados estruturados (OCR, NDEF, entidades, objetos) viajam como JSON numa `String`, e as pontes convertem para modelos C#/Dart.
 
 ### 2. Camada .NET MAUI (Android Binding Library)
 
@@ -103,6 +115,8 @@ O binding traduz o `.aar` em tipos C# (`Com.Scannervciarfid.*`), e a camada `Sca
 - **`ScannerListenerWrapper`** — herda `Java.Lang.Object` e implementa `IScannerListener` (gerado a partir de `ScannerListener`), traduzindo os callbacks JNI em `EventHandler<ScanResultEventArgs>`/`EventHandler<ScanErrorEventArgs>` usando POCOs puros. Nada acima dele precisa referenciar tipos Java.
 - **`IHardwareScannerService`** — interface cross-platform injetada via DI como `Singleton` (o leitor físico é um recurso global do aparelho, não algo por-página). A implementação Android (`HardwareScannerService`) é **idempotente** em `Initialize()` — proteção necessária porque `OnAppearing()` pode rodar várias vezes ao longo da vida da página, e registrar o `BroadcastReceiver` nativo duas vezes sem `Release()` no meio derruba o app.
 - **`VisionScanner.Engine`** — `BindableProperty` com o id do motor (`VisionEngines.Barcode`, `VisionEngines.Ocr`). O `PropertyMapper` busca o motor no `VisionEngineRegistry` nativo e o aplica na view. A troca funciona com a câmera ligada.
+- **Um pacote por domínio** — `ScannerVcIaRfid.Maui` (código de barras, câmera, documentos), `.Nfc`, `.Rfid`, `.Ai`, `.VisionExtras` e `.OcrScripts`, cada um com a própria binding (`ScannerVcIaRfid.<Domínio>.Android.Binding`). Cada serviço segue o mesmo padrão: um wrapper `Java.Lang.Object` traduz os callbacks JNI em eventos .NET ou `Task`, e os modelos expostos são POCOs.
+- **Capacidades opcionais** — o factory nativo devolve o leitor pela interface base (ex.: `IRfidReader`). Um cast C# comum falha num objeto Java; os serviços usam `JavaCast<T>()` para saber se o leitor também implementa `IRfidTagOperations`, `ISoftTriggerScanner` ou `ISymbologyConfigurableScanner`.
 - **`VisionScannerHandler` + `CommandMapper` (Strict Gating)** — o `ConnectHandler()` do handler **não** inicia a câmera automaticamente. `VisionScanner.StartCamera()` apenas invoca `Handler?.Invoke(nameof(StartCamera))`; um `CommandMapper<VisionScanner, VisionScannerHandler>` estático intercepta esse comando e só então chama `PlatformView.StartCamera()`. Isso elimina a condição de corrida entre o bind do CameraX e o diálogo assíncrono de permissão do usuário — a câmera só liga quando o app explicitamente mandar, depois de confirmar a permissão.
 
 ### 3. Camada Flutter (Plugin)
@@ -113,6 +127,8 @@ O plugin (`scanner_vc_ia_rfid_flutter`) expõe as duas mesmas vias através dos 
 - **`PlatformView` com instâncias isoladas por `viewId`** — cada `AndroidView` no lado Dart gera uma instância própria de `VisionScannerPlatformView`, com seu próprio `MethodChannel` nomeado `"<view_type>_<viewId>"`. Isso evita que múltiplas câmeras simultâneas na mesma árvore de widgets cruzem eventos entre si — cada preview só recebe os comandos (`startCamera`, `setEngine`) e callbacks (`onScanSuccess`/`onScanError`) da sua própria instância nativa.
 - **Motor por id** — `VisionScannerWidget(engine: VisionEngines.ocr)` envia o id nos `creationParams`. Mudar `engine` depois chama `setEngine`, sem recriar a câmera.
 - **Dependências via Maven** — o `android/build.gradle` do plugin lê os módulos do repositório Maven gerado por `./gradlew publish`. O POM de cada módulo traz CameraX e ML Kit de forma transitiva.
+- **Um plugin por domínio** — `scanner_vc_ia_rfid_flutter` (código de barras, câmera, documentos), `_nfc`, `_rfid`, `_ai`, `_vision_extras` e `_ocr_scripts`. Os plugins complementares de visão só registram motores no `VisionEngineRegistry` nativo: basta estar no `pubspec.yaml` para o `VisionScannerWidget` aceitar os ids novos.
+- **`ActivityAware` quando precisa** — o Code Scanner, o Document Scanner e o Reader Mode do NFC exigem a Activity atual; os plugins correspondentes a recebem pelo `ActivityPluginBinding`.
 
 ---
 
@@ -139,17 +155,25 @@ scanner-vc-ia-rfid/
 ├── vision-faces/                          # FaceDetectionEngine
 ├── vision-ocr-{chinese,japanese,korean,devanagari}/  # OCR por script
 ├── sample/                                # App Android nativo de exemplo
+├── libs/                                  # SDKs proprietários (fora do Git) - ver libs/README.md
 │
-├── dotnet/                                # Ponte .NET MAUI
-│   ├── ScannerVcIaRfid.Android.Binding/     # Android Binding Library (consome o .aar)
-│   ├── ScannerVcIaRfid.Maui/                # Wrappers, services, controls, handlers (Strict Gating)
-│   └── ScannerVcIaRfid.Maui.Sample/         # App de exemplo
+├── dotnet/                                # Ponte .NET MAUI (uma binding + um pacote por domínio)
+│   ├── ScannerVcIaRfid.Android.Binding/              # .aar de código de barras, câmera e documentos
+│   ├── ScannerVcIaRfid.Maui/                         # IHardwareScannerService, VisionScanner, Code/Document Scanner
+│   ├── ScannerVcIaRfid.Nfc.Android.Binding/ + ScannerVcIaRfid.Maui.Nfc/
+│   ├── ScannerVcIaRfid.Rfid.Android.Binding/ + ScannerVcIaRfid.Maui.Rfid/
+│   ├── ScannerVcIaRfid.Ai.Android.Binding/ + ScannerVcIaRfid.Maui.Ai/
+│   ├── ScannerVcIaRfid.VisionExtras.Android.Binding/ + ScannerVcIaRfid.Maui.VisionExtras/
+│   ├── ScannerVcIaRfid.OcrScripts.Android.Binding/ + ScannerVcIaRfid.Maui.OcrScripts/
+│   └── ScannerVcIaRfid.Maui.Sample/                  # App de exemplo com todos os pacotes
 │
-└── flutter/                               # Ponte Flutter
-    └── scanner_vc_ia_rfid_flutter/
-        ├── android/                         # Plugin nativo (EventChannel + PlatformView)
-        ├── lib/                             # API Dart pública
-        └── example/                         # App de exemplo
+└── flutter/                               # Ponte Flutter (um plugin por domínio)
+    ├── scanner_vc_ia_rfid_flutter/          # Código de barras, câmera e documentos
+    ├── scanner_vc_ia_rfid_nfc/
+    ├── scanner_vc_ia_rfid_rfid/
+    ├── scanner_vc_ia_rfid_ai/
+    ├── scanner_vc_ia_rfid_vision_extras/
+    └── scanner_vc_ia_rfid_ocr_scripts/      # cada plugin: android/, lib/ e example/
 ```
 
 ---
@@ -172,7 +196,7 @@ Rode os comandos na raiz do repositório:
    ./gradlew exportMauiAars
    ```
 
-   A task copia `scanner-vc-ia-rfid-<módulo>.aar` para `dotnet/ScannerVcIaRfid.Android.Binding/Jars/`.
+   A task copia cada `scanner-vc-ia-rfid-<módulo>.aar` para a pasta `Jars/` da binding do seu domínio (ex.: `nfc` vai para `dotnet/ScannerVcIaRfid.Nfc.Android.Binding/Jars/`). O mapa módulo → binding fica em `mauiBindings`, no `build.gradle.kts` da raiz. Módulos condicionais (`rfid-zebra`) só são copiados quando estão no build.
 
 Repita os dois passos sempre que alterar o código Kotlin. A versão publicada fica em `VERSION_NAME` (`gradle.properties`).
 
@@ -189,18 +213,35 @@ Cada domínio tem o próprio pacote MAUI (com a própria binding) e o próprio p
 | Motores extras de visão (complemento) | `vision-objects`, `vision-labels`, `vision-faces` | `ScannerVcIaRfid.Maui.VisionExtras` | `scanner_vc_ia_rfid_vision_extras` |
 | OCR por script (complemento) | `vision-ocr-chinese`, `-japanese`, `-korean`, `-devanagari` | `ScannerVcIaRfid.Maui.OcrScripts` | `scanner_vc_ia_rfid_ocr_scripts` |
 
+## Apps de exemplo
+
+| App | O que mostra |
+|---|---|
+| [`sample/`](sample) (Android nativo) | Todos os módulos: leitor físico, câmera com todos os motores, Code/Document Scanner, NFC, RFID e IA |
+| [`dotnet/ScannerVcIaRfid.Maui.Sample`](dotnet/ScannerVcIaRfid.Maui.Sample) | Todos os pacotes MAUI numa tela |
+| [`flutter/scanner_vc_ia_rfid_flutter/example`](flutter/scanner_vc_ia_rfid_flutter/example) | Leitor físico, câmera, Code Scanner, Document Scanner e gatilho por software |
+| [`flutter/scanner_vc_ia_rfid_nfc/example`](flutter/scanner_vc_ia_rfid_nfc/example) | Leitura e gravação NFC |
+| [`flutter/scanner_vc_ia_rfid_rfid/example`](flutter/scanner_vc_ia_rfid_rfid/example) | Inventário, leitura de TID e localização |
+| [`flutter/scanner_vc_ia_rfid_ai/example`](flutter/scanner_vc_ia_rfid_ai/example) | Idioma, entidades e tradução |
+| [`flutter/scanner_vc_ia_rfid_vision_extras/example`](flutter/scanner_vc_ia_rfid_vision_extras/example) | Objetos, rótulos e rostos |
+| [`flutter/scanner_vc_ia_rfid_ocr_scripts/example`](flutter/scanner_vc_ia_rfid_ocr_scripts/example) | OCR em chinês, japonês, coreano e devanágari |
+
+Os exemplos Flutter versionam só `lib/`, `pubspec.yaml` e o `AndroidManifest.xml`. Para rodar, gere o resto do projeto Android:
+
+1. Entre na pasta `example/` do plugin.
+2. Rode `flutter create --platforms=android .` (os arquivos existentes não são sobrescritos).
+3. Rode `flutter run`.
+
+O sample nativo e o sample MAUI usam `minSdk` 26 (pacote de IA) ou 29, quando o SDK Zebra RFID API3 está em `libs/`.
+
 ## Guia rápido de integração
 
-### Requisito global — permissão de câmera
+### Permissão de câmera
+
+O módulo `vision` já declara `android.permission.CAMERA` (com `uses-feature` `required="false"`), e o merge do manifesto leva a declaração para o app. Declarar de novo no app é opcional.
 
 > [!WARNING]
-> Todo app hospedeiro (MAUI ou Flutter) que use a captura via câmera **precisa** declarar, no seu próprio `AndroidManifest.xml`:
->
-> ```xml
-> <uses-permission android:name="android.permission.CAMERA" />
-> ```
->
-> Isso **não** basta sozinho: a partir do Android 6 (API 23), a permissão também precisa ser solicitada **em tempo de execução**, antes de iniciar a câmera — ambos os quickstarts abaixo mostram como. Sem o request em runtime, o bind do CameraX falha (de forma controlada, sem crash — o núcleo Kotlin já captura a `SecurityException` e reporta via `onScanError`), mas a câmera simplesmente não funciona.
+> Peça a permissão de câmera **em tempo de execução**, antes de iniciar a câmera. Os quickstarts abaixo mostram como. Sem o pedido em runtime, o bind do CameraX falha de forma controlada (o núcleo Kotlin captura a `SecurityException` e reporta via `onScanError`), mas a câmera não funciona. O Google Code Scanner e o Google Document Scanner não precisam dessa permissão.
 
 ### MAUI
 
@@ -649,6 +690,10 @@ if (_hardwareScanner.SupportsSoftTrigger) _hardwareScanner.StartSoftScan();
 | Google ML Kit Barcode Scanning | 17.3.0 |
 | Google Play Services Code Scanner | 16.1.0 |
 | Google Play Services Document Scanner | 16.0.0 |
-| Google ML Kit Text Recognition | 16.0.1 |
+| Google ML Kit Text Recognition (latino e scripts) | 16.0.1 |
+| Google ML Kit Object Detection / Image Labeling / Face Detection | 17.0.2 / 17.0.9 / 16.1.7 |
+| Google ML Kit Language ID / Translate / Entity Extraction | 17.0.6 / 17.0.3 / 16.0.0-beta6 |
 | .NET | 10.0 (`net10.0-android`) |
 | Flutter | 3.19+ / Dart 3.3+ |
+
+As versões ficam em [`gradle/libs.versions.toml`](gradle/libs.versions.toml). Ao mudar uma versão do ML Kit ou do CameraX, atualize também os `PackageReference` das bindings .NET (prefixo `1` no NuGet: ML Kit 17.3.0 = NuGet 117.3.0.x).
